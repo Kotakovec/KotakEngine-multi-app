@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KotakEngine</title>
     
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    
     <script src="https://unpkg.com/html5-qrcode"></script>
 
     <style>
@@ -188,7 +191,7 @@
         .detail-title { font-size: 1.5rem; font-weight: 800; }
         .delete-card-btn { background: none; border: none; color: #ff5c7c; font-size: 1.5rem; cursor: pointer; padding: 5px; }
         
-        /* BÍLÝ KONTEJNER PRO KÓDY */
+        /* BÍLÝ KONTEJNER */
         .barcode-container { 
             flex: 1; 
             display: flex; 
@@ -205,18 +208,10 @@
         
         .detail-logo-box { width: 65px; height: 65px; background-color: #007aff; border-radius: 18px; display: flex; justify-content: center; align-items: center; font-size: 1.8rem; font-weight: 800; color: #ffffff; }
         
-        /* CENTRÁLNÍ KONTEJNERY PRO ČISTÝ JAVASCRIPT RENDERING */
-        .native-render-box {
-            width: 100%;
-            max-width: 320px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background: #ffffff;
-            padding: 10px;
-            overflow: hidden;
-        }
-
+        /* SKUTEČNÉ STRUKTURY PRO PROFI KNIHOVNY */
+        #barcodeRender { max-width: 100%; height: auto; display: none; }
+        #qrcodeRender { padding: 10px; background: #ffffff; display: none; }
+        
         .barcode-number { font-size: 1.2rem; font-weight: 700; letter-spacing: 3px; color: #0d0f14; margin-top: 10px; text-align: center; }
     </style>
 </head>
@@ -295,7 +290,8 @@
             
             <div class="barcode-container">
                 <div class="detail-logo-box" id="detailCardLetter">?</div>
-                <div id="kotakNativeRender" class="native-render-box"></div>
+                <svg id="barcodeRender"></svg>
+                <div id="qrcodeRender"></div>
                 <div class="barcode-number" id="detailBarcodeNumber">0000000000</div>
             </div>
         </div>
@@ -514,75 +510,47 @@
 
     <script>
         const detailOverlay = document.getElementById('detailOverlay');
-        const nativeRenderBox = document.getElementById('kotakNativeRender');
-
+        
         window.openCardDetail = function(name, letter, code, type) {
             document.getElementById('detailCardName').innerText = name;
             document.getElementById('detailCardLetter').innerText = letter;
             document.getElementById('detailBarcodeNumber').innerText = code;
             
+            const barcodeSvg = document.getElementById('barcodeRender');
+            const qrcodeDiv = document.getElementById('qrcodeRender');
+            
+            // 1. Otevřeme modal, aby byl plně roztažený
             detailOverlay.classList.add('active');
-            nativeRenderBox.innerHTML = ""; // Vymazat starý kód
+            
+            // 2. Vyčistíme kontejnery
+            barcodeSvg.style.display = "none"; 
+            qrcodeDiv.style.display = "none"; 
+            qrcodeDiv.innerHTML = "";
 
+            // 3. Počkáme chviličku na vykreslení kontejneru a vygenerujeme ostrý kód
             setTimeout(() => {
                 if (type === "barcode") {
-                    // --- KOTAK NATIVNÍ ČÁROVÝ SKENER (CODE128 PSEUDO-RENDER) ---
-                    // Generuje dokonale vyvážené pokladní linky čistě z vestavěného loopu
-                    let finalHTML = `<div style="width: 100%; height: 120px; display: flex; background: #ffffff; padding: 10px 5px;">`;
-                    
-                    // Bezpečný hash kód ze zadaného čísla pro vytvoření čitelných linek
-                    let patternSeed = 0;
-                    for(let i=0; i<code.length; i++) patternSeed += code.charCodeAt(i) * (i+1);
-                    
-                    // Okrajová ochranná zóna
-                    finalHTML += `<div style="width: 8px; height: 100%; background: #ffffff;"></div>`;
-                    
-                    // Generování 60 konzistentních čar, které pokladna bez problému přečte
-                    for (let i = 0; i < 65; i++) {
-                        let bit = (Math.sin(patternSeed + i * 0.45) > -0.1) ? 1 : 0;
-                        // První a poslední čáry jsou vždy tlusté pro ukotvení laseru pokladny
-                        let thick = (i < 3 || i > 61) ? 2.5 : ((i % 5 === 0) ? 3 : 1.5);
-                        let color = (bit === 1) ? "#000000" : "#ffffff";
-                        finalHTML += `<div style="width: ${thick}px; height: 100%; background: ${color}; flex-grow: 1;"></div>`;
-                    }
-                    
-                    finalHTML += `<div style="width: 8px; height: 100%; background: #ffffff;"></div></div>`;
-                    nativeRenderBox.innerHTML = finalHTML;
-
+                    barcodeSvg.style.display = "block";
+                    JsBarcode("#barcodeRender", code, { 
+                        format: "CODE128", 
+                        width: 2.5, 
+                        height: 120, 
+                        displayValue: false, 
+                        background: "#ffffff", 
+                        lineColor: "#000000" 
+                    });
                 } else if (type === "qr") {
-                    // --- KOTAK NATIVNÍ QR SKENER (TABULKOVÝ RENDER) ---
-                    // Vygeneruje mřížku bodů (Matrix) přímo do HTML tabulky bez canvasu
-                    let size = 25; // 25x25 bodů
-                    let tableHTML = `<table style="border-collapse: collapse; background: #ffffff; padding: 10px; border: 8px solid #ffffff;">`;
-                    
-                    let qrSeed = 0;
-                    for(let i=0; i<code.length; i++) qrSeed += code.charCodeAt(i);
-
-                    for (let r = 0; r < size; r++) {
-                        tableHTML += `<tr>`;
-                        for (let c = 0; c < size; c++) {
-                            // Detekce rohů (Standardní velké QR čtverce v rozích pro zaměření foťáku)
-                            let isCorner = (r < 7 && c < 7) || (r < 7 && c >= size - 7) || (r >= size - 7 && c < 7);
-                            let isCornerCenter = (r > 1 && r < 5 && c > 1 && c < 5) || (r > 1 && r < 5 && c >= size - 5 && c < size - 2) || (r >= size - 5 && r < size - 2 && c > 1 && c < 5);
-                            let isCornerBorder = isCorner && !isCornerCenter && (r === 0 || r === 6 || c === 0 || c === 6 || r === size-1 || r === size-7 || c === size-1 || c === size-7);
-
-                            let isBlack = false;
-                            if (isCorner) {
-                                isBlack = isCornerBorder || isCornerCenter;
-                            } else {
-                                // Pseudonáhodný šum pro tělo kódu závislý na textu karty
-                                isBlack = (Math.sin(qrSeed + (r * size) + c) > 0);
-                            }
-
-                            let bg = isBlack ? "#000000" : "#ffffff";
-                            tableHTML += `<td style="width: 6px; height: 6px; background: ${bg}; padding: 0;"></td>`;
-                        }
-                        tableHTML += `</tr>`;
-                    }
-                    tableHTML += `</table>`;
-                    nativeRenderBox.innerHTML = tableHTML;
+                    qrcodeDiv.style.display = "block";
+                    new QRCode(qrcodeDiv, { 
+                        text: code, 
+                        width: 180, 
+                        height: 180, 
+                        colorDark : "#000000", 
+                        colorLight : "#ffffff", 
+                        correctLevel : QRCode.CorrectLevel.H 
+                    });
                 }
-            }, 50);
+            }, 40);
         };
         
         window.closeCardDetail = function() { detailOverlay.classList.remove('active'); };
