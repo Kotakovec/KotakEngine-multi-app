@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KotakEngine</title>
+    <title>Moje karty</title>
     
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -32,7 +32,7 @@
             flex-direction: column;
             width: 100%;
             height: 100%;
-            padding: 20px 20px 30px 20px;
+            padding: 10px 20px 90px 20px;
         }
 
         .section-title-bar {
@@ -44,24 +44,17 @@
         }
 
         .section-title {
-            font-size: 1.8rem;
+            font-size: 1.6rem;
             font-weight: 800;
-            background: linear-gradient(45deg, #3b82f6, #b4f9f8);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            letter-spacing: 0.5px;
+            color: #94a3b8;
         }
 
         .user-code {
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             font-weight: 700;
             color: #3b82f6;
             letter-spacing: 0.5px;
             cursor: pointer;
-            background-color: #161920;
-            padding: 8px 14px;
-            border-radius: 20px;
-            border: 1px solid #1a1f2c;
         }
 
         /* --- GRID MŘÍŽKA --- */
@@ -115,7 +108,39 @@
             pointer-events: none;
         }
 
-        /* --- MODALY --- */
+        /* --- BOTTOM NAVBAR --- */
+        .bottom-navbar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 70px;
+            background-color: #10121a;
+            border-top: 1px solid #1a1f2c;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 100;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            width: 60px;
+            height: 100%;
+            background: none;
+            border: none;
+            outline: none;
+        }
+
+        .nav-icon { font-size: 1.5rem; color: #4b5563; }
+        .nav-item.active .nav-icon { color: #007aff; }
+
+        /* --- MODALY / BOTTOM SHEETS --- */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -134,7 +159,17 @@
         }
 
         .modal-overlay.active { opacity: 1; pointer-events: auto; }
-        .modal-sheet { background-color: #1c1e24; width: 100%; border-radius: 25px 25px 0 0; padding: 30px 20px; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1); max-width: 500px; }
+
+        .modal-sheet {
+            background-color: #1c1e24;
+            width: 100%;
+            border-radius: 25px 25px 0 0;
+            padding: 30px 20px;
+            transform: translateY(100%);
+            transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+            max-width: 500px;
+        }
+
         .modal-overlay.active .modal-sheet { transform: translateY(0); }
         .modal-title { font-size: 1.6rem; font-weight: 700; margin-bottom: 25px; }
         .form-input { width: 100%; padding: 16px; background-color: #282a32; border: none; border-radius: 12px; color: #ffffff; font-size: 1rem; margin-bottom: 16px; outline: none; }
@@ -143,9 +178,38 @@
         .checkbox-container { display: flex; justify-content: space-between; align-items: center; padding: 16px; background-color: #282a32; border-radius: 12px; margin-bottom: 25px; color: #94a3b8; }
         .checkbox-container input { width: 20px; height: 20px; accent-color: #007aff; }
 
-        .form-buttons-row { display: flex; gap: 12px; width: 100%; }
-        .btn-submit-card { flex: 1; padding: 16px; background-color: #007aff; color: #ffffff; border: none; border-radius: 14px; font-size: 1rem; font-weight: 700; cursor: pointer; text-transform: uppercase; }
-        .btn-scan-card { flex: 1; padding: 16px; background-color: #282a32; color: #3b82f6; border: 1px solid #1a1f2c; border-radius: 14px; font-size: 1rem; font-weight: 700; cursor: pointer; text-transform: uppercase; }
+        /* --- DVE TLACITKA VEDLE SEBE --- */
+        .form-buttons-row {
+            display: flex;
+            gap: 12px;
+            width: 100%;
+        }
+
+        .btn-submit-card {
+            flex: 1;
+            padding: 16px;
+            background-color: #007aff;
+            color: #ffffff;
+            border: none;
+            border-radius: 14px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+
+        .btn-scan-card {
+            flex: 1;
+            padding: 16px;
+            background-color: #282a32;
+            color: #3b82f6;
+            border: 1px solid #1a1f2c;
+            border-radius: 14px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
 
         .sync-buttons-row { display: flex; flex-direction: column; gap: 12px; width: 100%; }
         .btn-sync-action { width: 100%; padding: 16px; border: none; border-radius: 14px; font-size: 1.1rem; font-weight: 700; cursor: pointer; }
@@ -156,7 +220,14 @@
         .btn-confirm-yes { flex: 1; padding: 16px; background-color: #ff5c7c; color: #ffffff; border: none; border-radius: 14px; font-size: 1.1rem; font-weight: 700; cursor: pointer; }
         .btn-confirm-no { flex: 1; padding: 16px; background-color: #282a32; color: #ffffff; border: none; border-radius: 14px; font-size: 1.1rem; font-weight: 700; cursor: pointer; }
 
-        #scannerView { width: 100%; border-radius: 15px; overflow: hidden; background-color: #000000; margin-bottom: 20px; }
+        /* --- SKENOVACÍ OKNO --- */
+        #scannerView {
+            width: 100%;
+            border-radius: 15px;
+            overflow: hidden;
+            background-color: #000000;
+            margin-bottom: 20px;
+        }
 
         /* --- DETAIL OVERLAY --- */
         .card-detail-overlay {
@@ -165,7 +236,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(13, 15, 20, 0.95);
+            background-color: #0d0f14;
             z-index: 20000;
             display: flex;
             flex-direction: column;
@@ -175,55 +246,34 @@
         }
 
         .card-detail-overlay.active { transform: translateX(0); }
-        
-        .detail-card-container {
-            width: 100%;
-            max-width: 450px;
-            margin: 0 auto;
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-        }
-
         .detail-header { display: flex; align-items: center; justify-content: space-between; width: 100%; margin-bottom: 30px; }
         .header-left-box { display: flex; align-items: center; }
         .close-detail-btn { background: none; border: none; color: #007aff; font-size: 1.8rem; cursor: pointer; padding-right: 15px; }
         .detail-title { font-size: 1.5rem; font-weight: 800; }
         .delete-card-btn { background: none; border: none; color: #ff5c7c; font-size: 1.5rem; cursor: pointer; padding: 5px; }
         
-        /* BÍLÝ KONTEJNER */
-        .barcode-container { 
-            flex: 1; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: center; 
-            gap: 25px; 
-            background-color: #ffffff; 
-            border-radius: 25px; 
-            padding: 30px 15px; 
-            margin-bottom: 20px; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3); 
-        }
-        
+        .barcode-container { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 25px; background-color: #ffffff; border-radius: 25px; padding: 30px 15px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
         .detail-logo-box { width: 65px; height: 65px; background-color: #007aff; border-radius: 18px; display: flex; justify-content: center; align-items: center; font-size: 1.8rem; font-weight: 800; color: #ffffff; }
-        
-        /* SKUTEČNÉ STRUKTURY PRO PROFI KNIHOVNY */
         #barcodeRender { max-width: 100%; height: auto; display: none; }
         #qrcodeRender { padding: 10px; background: #ffffff; display: none; }
-        
-        .barcode-number { font-size: 1.2rem; font-weight: 700; letter-spacing: 3px; color: #0d0f14; margin-top: 10px; text-align: center; }
+        .barcode-number { font-size: 1.1rem; font-weight: 700; letter-spacing: 2px; color: #0d0f14; margin-top: 10px; }
     </style>
 </head>
 <body>
 
     <div class="cards-layout">
         <div class="section-title-bar">
-            <h2 class="section-title">KotakEngine</h2>
-            <div class="user-code" id="displayRoomCode" onclick="handleTopCodeClick()">KÓD: -----</div>
+            <h2 class="section-title">Přehled</h2>
+            <div class="user-code" id="displayRoomCode" onclick="openSyncModal()">KÓD: -----</div>
         </div>
 
         <div class="cards-grid" id="cardsGrid"></div>
+    </div>
+
+    <div class="bottom-navbar">
+        <button class="nav-item" onclick="switchTab('shop')"><div class="nav-icon">🛒</div></button>
+        <button class="nav-item" onclick="openAddModal()"><div class="nav-icon" style="font-size: 2.2rem; font-weight: 300; color: #007aff;">+</div></button>
+        <button class="nav-item active" onclick="switchTab('cards')"><div class="nav-icon">💳</div></button>
     </div>
 
     <div class="modal-overlay" id="syncModalOverlay" onclick="closeOverlaySyncModal(event)">
@@ -279,7 +329,7 @@
     </div>
 
     <div class="card-detail-overlay" id="detailOverlay" onclick="closeCardDetail()">
-        <div class="detail-card-container" onclick="event.stopPropagation()">
+        <div class="modal-content" style="height: 100%; display: flex; flex-direction: column;" onclick="event.stopPropagation()">
             <div class="detail-header">
                 <div class="header-left-box">
                     <button class="close-detail-btn" onclick="closeCardDetail()">✕</button>
@@ -287,7 +337,6 @@
                 </div>
                 <button class="delete-card-btn" onclick="openConfirmDeleteModal()" title="Smazat kartu">🗑️</button>
             </div>
-            
             <div class="barcode-container">
                 <div class="detail-logo-box" id="detailCardLetter">?</div>
                 <svg id="barcodeRender"></svg>
@@ -345,11 +394,6 @@
         }
         checkUserRoom();
 
-        window.handleTopCodeClick = function() {
-            if (currentRoom) openAddModal();
-            else syncModalOverlay.classList.add('active');
-        };
-
         window.handleSyncConnect = function(event) {
             event.preventDefault();
             const roomInput = document.getElementById('syncInput').value;
@@ -392,7 +436,7 @@
                     });
                     initDragAndDrop();
                 } else {
-                    cardsGrid.innerHTML = `<p style="grid-column: span 2; text-align: center; color: #565f89; padding-top: 20px;">Žádné karty. Klikni na kód nahoře pro přidání.</p>`;
+                    cardsGrid.innerHTML = `<p style="grid-column: span 2; text-align: center; color: #565f89; padding-top: 20px;">Žádné karty. Klikni na + pro přidání.</p>`;
                 }
             });
         }
@@ -416,26 +460,36 @@
             }
         };
 
+        // --- SKENOVÁNÍ POMOCÍ KAMERY ---
         window.startCameraScanner = function() {
             scannerOverlay.classList.add('active');
+            
+            // Konfigurace čtečky (zkouší QR i klasické čárové kódy z obchodů)
             html5QrcodeScanner = new Html5Qrcode("scannerView");
             html5QrcodeScanner.start(
                 { facingMode: "environment" }, 
-                { fps: 15, qrbox: { width: 250, height: 150 } },
+                {
+                    fps: 15,
+                    qrbox: { width: 250, height: 150 }
+                },
                 (decodedText, decodedResult) => {
+                    // Úspěšně naskenováno!
                     document.getElementById('cardNumber').value = decodedText;
+                    
+                    // Zkusíme odhadnout, jestli je to QR nebo Barcode podle typu kódování
                     const format = decodedResult.result.format.formatName;
                     if (format.includes("QR") || format.includes("DATA_MATRIX")) {
                         document.getElementById('cardIsQR').checked = true;
                     } else {
                         document.getElementById('cardIsQR').checked = false;
                     }
-                    stopCameraScanner();
+
+                    stopCameraScanner(); // Vypne foťák
                 },
-                (errorMessage) => {}
+                (errorMessage) => { /* Chyby průběžného hledání kódu ignorujeme */ }
             ).catch(err => {
-                console.error(err);
-                alert("Nepodařilo se spustit fotoaparát.");
+                console.error("Nelze spustit foťák: ", err);
+                alert("Nepodařilo se spustit fotoaparát. Zkontroluj oprávnění.");
                 stopCameraScanner();
             });
         };
@@ -445,12 +499,15 @@
                 html5QrcodeScanner.stop().then(() => {
                     html5QrcodeScanner = null;
                     scannerOverlay.classList.remove('active');
-                }).catch(() => { scannerOverlay.classList.remove('active'); });
+                }).catch(err => {
+                    scannerOverlay.classList.remove('active');
+                });
             } else {
                 scannerOverlay.classList.remove('active');
             }
         };
 
+        // Drag and Drop
         function initDragAndDrop() {
             const items = cardsGrid.querySelectorAll('.card-item');
             items.forEach(item => {
@@ -510,50 +567,25 @@
 
     <script>
         const detailOverlay = document.getElementById('detailOverlay');
-        
         window.openCardDetail = function(name, letter, code, type) {
             document.getElementById('detailCardName').innerText = name;
             document.getElementById('detailCardLetter').innerText = letter;
             document.getElementById('detailBarcodeNumber').innerText = code;
-            
             const barcodeSvg = document.getElementById('barcodeRender');
             const qrcodeDiv = document.getElementById('qrcodeRender');
-            
-            // 1. Otevřeme modal, aby byl plně roztažený
-            detailOverlay.classList.add('active');
-            
-            // 2. Vyčistíme kontejnery
-            barcodeSvg.style.display = "none"; 
-            qrcodeDiv.style.display = "none"; 
-            qrcodeDiv.innerHTML = "";
+            barcodeSvg.style.display = "none"; qrcodeDiv.style.display = "none"; qrcodeDiv.innerHTML = "";
 
-            // 3. Počkáme chviličku na vykreslení kontejneru a vygenerujeme ostrý kód
-            setTimeout(() => {
-                if (type === "barcode") {
-                    barcodeSvg.style.display = "block";
-                    JsBarcode("#barcodeRender", code, { 
-                        format: "CODE128", 
-                        width: 2.5, 
-                        height: 120, 
-                        displayValue: false, 
-                        background: "#ffffff", 
-                        lineColor: "#000000" 
-                    });
-                } else if (type === "qr") {
-                    qrcodeDiv.style.display = "block";
-                    new QRCode(qrcodeDiv, { 
-                        text: code, 
-                        width: 180, 
-                        height: 180, 
-                        colorDark : "#000000", 
-                        colorLight : "#ffffff", 
-                        correctLevel : QRCode.CorrectLevel.H 
-                    });
-                }
-            }, 40);
+            if (type === "barcode") {
+                barcodeSvg.style.display = "block";
+                JsBarcode("#barcodeRender", code, { format: "CODE128", width: 2.5, height: 100, displayValue: false, background: "#ffffff", lineColor: "#000000" });
+            } else if (type === "qr") {
+                qrcodeDiv.style.display = "block";
+                new QRCode(qrcodeDiv, { text: code, width: 160, height: 160, colorDark : "#000000", colorLight : "#ffffff", correctLevel : QRCode.CorrectLevel.H });
+            }
+            detailOverlay.classList.add('active');
         };
-        
         window.closeCardDetail = function() { detailOverlay.classList.remove('active'); };
+        window.switchTab = function(tabName) { console.log("Přepnuto: " + tabName); };
     </script>
 </body>
 </html>
