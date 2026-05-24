@@ -88,9 +88,6 @@
             text-align: center;
             animation: fadeIn 1s ease-out;
             z-index: 5;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
         }
 
         .title {
@@ -118,7 +115,6 @@
             cursor: pointer;
             transition: all 0.3s ease;
             outline: none;
-            margin-bottom: 20px;
         }
 
         .enter-btn:hover {
@@ -126,25 +122,6 @@
             color: #0f111a;
             box-shadow: 0 0 20px rgba(122, 162, 247, 0.4);
             transform: translateY(-2px);
-        }
-
-        /* STYL PRO CHECKBOX POD TLAČÍTKEM */
-        .auto-redirect-container {
-            display: none; /* Schováno pro nepřihlášené */
-            align-items: center;
-            gap: 8px;
-            font-size: 0.95rem;
-            color: #a9b1d6;
-            cursor: pointer;
-            user-select: none;
-            animation: fadeIn 0.5s ease-out;
-        }
-
-        .auto-redirect-container input {
-            cursor: pointer;
-            accent-color: #7aa2f7; /* Modrá barva checkboxu */
-            width: 16px;
-            height: 16px;
         }
 
         /* IOS ZOOM ANIMACE */
@@ -385,11 +362,6 @@
         <div class="main-container">
             <h1 class="title">KotakEngine</h1>
             <button class="enter-btn" id="enterBtn">ENTER</button>
-            
-            <label class="auto-redirect-container" id="autoRedirectWrap">
-                <input type="checkbox" id="autoRedirectCheck">
-                Automaticky přejít na aplikaci
-            </label>
         </div>
     </div>
 
@@ -477,19 +449,8 @@
         const appToast = document.getElementById('appToast');
         const toastText = document.getElementById('toastText');
         const zoomRipple = document.getElementById('zoomRipple');
-        
-        const autoRedirectWrap = document.getElementById('autoRedirectWrap');
-        const autoRedirectCheck = document.getElementById('autoRedirectCheck');
 
-        function isStrictMobile() {
-            const ua = navigator.userAgent || navigator.vendor || window.opera;
-            const isAndroidPhone = /Android/i.test(ua) && /Mobile/i.test(ua);
-            const isIphone = /iPhone/i.test(ua) && !/iPad/i.test(ua);
-            const isIpod = /iPod/i.test(ua);
-            return isAndroidPhone || isIphone || isIpod;
-        }
-
-        // --- AUTOMATICKÁ KONTROLA PAMĚTI PŘI REFRESHI ---
+        // AUTOMATICKÁ KONTROLA PAMĚTI PŘI REFRESHI
         function checkSavedLogin() {
             const savedUser = localStorage.getItem('kotak_user');
             if (savedUser) {
@@ -498,38 +459,17 @@
                 currentUserData.username = parsedData.username;
                 currentUserData.email = parsedData.email;
                 profileToggle.classList.add('is-logged-in');
-                
-                // Ukážeme checkbox, protože uživatel je přihlášený
-                autoRedirectWrap.style.display = "flex";
-
-                // Podíváme se, jestli měl zapnutý automatický přechod
-                const autoRedirectActive = localStorage.getItem('kotak_auto_redirect') === 'true';
-                if (autoRedirectActive) {
-                    autoRedirectCheck.checked = true;
-                    
-                    // Pokud splňuje podmínku mobilního telefonu, okamžitě ho přesměrujeme do app.html bez klikání
-                    if (isStrictMobile()) {
-                        triggerDirectRedirect();
-                    }
-                }
             }
         }
         checkSavedLogin();
 
-        // Funkce pro okamžité přesměrování při zapnutém checkboxu (vynechá animaci kliku)
-        function triggerDirectRedirect() {
-            const configRef = ref(db, 'app_config/path');
-            get(configRef).then((snapshot) => {
-                if (snapshot.exists()) {
-                    window.location.href = snapshot.val();
-                }
-            }).catch(err => console.error(err));
+        function isStrictMobile() {
+            const ua = navigator.userAgent || navigator.vendor || window.opera;
+            const isAndroidPhone = /Android/i.test(ua) && /Mobile/i.test(ua);
+            const isIphone = /iPhone/i.test(ua) && !/iPad/i.test(ua);
+            const isIpod = /iPod/i.test(ua);
+            return isAndroidPhone || isIphone || isIpod;
         }
-
-        // Sledování změn stavu checkboxu
-        autoRedirectCheck.addEventListener('change', () => {
-            localStorage.setItem('kotak_auto_redirect', autoRedirectCheck.checked);
-        });
 
         profileToggle.addEventListener('click', () => {
             openModal();
@@ -653,9 +593,6 @@
                             currentUserData.email = usersData[username].email;
                             
                             localStorage.setItem('kotak_user', JSON.stringify(currentUserData));
-                            
-                            // Ukážeme checkbox pro auto přesměrování
-                            autoRedirectWrap.style.display = "flex";
 
                             profileToggle.classList.add('is-logged-in');
                             closeModal();
@@ -723,9 +660,6 @@
                         currentUserData.email = email;
 
                         localStorage.setItem('kotak_user', JSON.stringify(currentUserData));
-                        
-                        // Ukážeme checkbox pro auto přesměrování
-                        autoRedirectWrap.style.display = "flex";
 
                         profileToggle.classList.add('is-logged-in');
                         closeModal();
@@ -742,14 +676,9 @@
             isLoggedIn = false;
             currentUserData = { username: "", email: "" };
             
-            // Vyčistíme kompletně paměť včetně přesměrování
             localStorage.removeItem('kotak_user');
-            localStorage.removeItem('kotak_auto_redirect');
-            
-            autoRedirectCheck.checked = false;
-            autoRedirectWrap.style.display = "none"; // Schováme checkbox
-
             profileToggle.classList.remove('is-logged-in');
+            
             closeModal();
             showToast("ℹ️ Byl jsi odhlášen.", "warning");
             
