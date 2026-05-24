@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>KotakEngine - Karty</title>
+    
+    <meta name="color-scheme" content="dark">
+    <meta name="android-color-scheme" content="dark">
+
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
@@ -13,6 +17,15 @@
             --bg: #0f1014; --card-bg: #1c1e26; --accent: #007aff; --text: #ffffff;
             --danger: #ff3b30; --separator: #2c2e3a; --nav-bg: #16181f; --green: #34c759;
         }
+        
+        /* Vynucení tmavého barevného schématu pro PWA na úrovni CSS */
+        @media (prefers-color-scheme: light) {
+            :root { color-scheme: dark; }
+        }
+        @media (prefers-color-scheme: dark) {
+            :root { color-scheme: dark; }
+        }
+
         body, html { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; height: 100%; overflow: hidden; }
 
         /* FORCE UPDATE POP-UP */
@@ -37,7 +50,7 @@
             transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .page { width: 100vw; height: 100%; padding: 10px 20px; box-sizing: border-box; overflow-y: auto; position: relative; }
-        h1 { font-size: 26px; margin: 5px 0 15px 0; font-weight: 700; }
+        h1 { font-size: 26px; margin: 5px 0 15px 0; font-weight: 700; color: #ffffff; }
 
         /* DESIGN BUBBLÍ (2 sloupce, vajíčkový tvar) */
         .grid { 
@@ -112,16 +125,19 @@
         .input-box { width: 100%; padding: 18px; margin: 8px 0; background: #2c2e3a; border: none; border-radius: 12px; color: white; font-size: 16px; box-sizing: border-box; }
         .btn-main { background: var(--accent); color: white; font-weight: bold; border: none; cursor: pointer; width: 100%; }
 
-        /* DETAIL */
+        /* DETAIL (Oprava barev textů pro bílé pozadí) */
         #detail-view { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; color: black; z-index: 2000; display: none; flex-direction: column; opacity: 0; transition: all 0.4s; padding-top: calc(env(safe-area-inset-top, 20px) + 5px); }
         #detail-view.active { opacity: 1; display: flex; }
+        #detail-view .close-det { color: #000000 !important; font-size: 24px; cursor: pointer; }
+        #det-name { color: #000000 !important; font-weight: 800; text-transform: uppercase; }
         #barcode-container, #qrcode { width: 100%; display: flex; justify-content: center; align-items: center; padding: 20px 0; }
-        .card-number-display { margin-top: 10px; font-family: monospace; font-size: 22px; font-weight: bold; color: #333; text-align: center; }
+        .card-number-display { margin-top: 10px; font-family: monospace; font-size: 22px; font-weight: bold; color: #333 !important; text-align: center; }
 
         /* NÁKUPNÍ SEZNAM STYLY */
         .add-todo-btn { background: var(--green); border: none; border-radius: 12px; color: white; padding: 0 25px; font-weight: bold; font-size: 24px; height: 55px; }
         .todo-input-wrap { display: flex; gap: 8px; align-items: center; }
         .todo-input-wrap .input-box { margin: 0; height: 55px; }
+        .todo-item-text { flex: 1; color: #ffffff; }
     </style>
 </head>
 <body>
@@ -184,9 +200,9 @@
 
 <div id="detail-view">
     <div style="display: flex; justify-content: space-between; padding: 20px 20px; align-items: center;">
-        <div onclick="hideDetail()" style="font-size: 24px;">✕</div>
-        <div id="det-name" style="font-weight: 800; text-transform: uppercase;">NÁZEV</div>
-        <div onclick="deleteCard()" style="color: red; font-weight: bold;">SMAZAT</div>
+        <div onclick="hideDetail()" class="close-det">✕</div>
+        <div id="det-name">NÁZEV</div>
+        <div onclick="deleteCard()" style="color: red; font-weight: bold; cursor: pointer;">SMAZAT</div>
     </div>
     <div style="display: flex; flex-direction: column; align-items: center; padding: 10px 20px;">
         <div id="barcode-container"><svg id="barcode"></svg></div>
@@ -256,21 +272,17 @@
     function initUserRoomListener() {
         if (!uName) return;
         
-        // Vypnutí případného starého listeneru
         if (userRoomRef) userRoomRef.off();
         
-        // ŽIVÝ POSLECH: Sleduje změnu přidělené místnosti u daného uživatele v reálném čase
         userRoomRef = db.ref('users/' + uName + '/cards');
         userRoomRef.on('value', snap => {
             const assignedRoom = snap.val();
             if (assignedRoom) {
                 const currentLocalRoom = localStorage.getItem('room');
-                // Pokud se zapsaná místnost v DB liší od té lokální, live přepneme streamy dat
                 if (assignedRoom.toString() !== currentLocalRoom) {
-                    startSync(assignedRoom.toString(), false); // false = nezapisovat znovu zpět do DB, jen přepnout stream
+                    startSync(assignedRoom.toString(), false);
                 }
             } else {
-                // Pokud uživatel místnost nemá, vygenerujeme novou a zapíšeme ji
                 const defaultRoom = Math.floor(10000 + Math.random() * 90000).toString();
                 startSync(defaultRoom, true);
             }
@@ -280,7 +292,7 @@
     function initSyncManual() {
         const code = document.getElementById('syncInput').value;
         if (code.length !== 5) return alert("Zadej 5 čísel!");
-        startSync(code, true); // Zde uživatel mění místnost ručně, chceme zápis do DB
+        startSync(code, true);
         closeAll();
     }
 
@@ -290,7 +302,6 @@
         if(cardsRef) cardsRef.off();
         if(todosRef) todosRef.off();
 
-        // Pokud je vyžadován zápis do DB a máme uživatelské jméno
         if (writeToDatabase && uName) {
             db.ref('users/' + uName + '/cards').set(code);
         }
@@ -520,7 +531,7 @@
     function renderTodos() {
         const l = document.getElementById('todoList'); l.innerHTML = '';
         todos.forEach((t, i) => {
-            l.innerHTML += `<div style="display:flex; align-items:center; padding:15px 0; border-bottom:1px solid #222;"><input type="checkbox" onchange="toggleTodo(${i})" ${t.checked ? 'checked' : ''} style="width:20px; height:20px; margin-right:12px;"><span style="flex:1; ${t.checked ? 'text-decoration:line-through; color:#555' : ''}">${t.text}</span><div onclick="deleteTodo(${i})" style="color:#444; padding:5px">✕</div></div>`;
+            l.innerHTML += `<div style="display:flex; align-items:center; padding:15px 0; border-bottom:1px solid #222;"><input type="checkbox" onchange="toggleTodo(${i})" ${t.checked ? 'checked' : ''} style="width:20px; height:20px; margin-right:12px;"><span class="todo-item-text" style="${t.checked ? 'text-decoration:line-through; color:#555' : ''}">${t.text}</span><div onclick="deleteTodo(${i})" style="color:#444; padding:5px">✕</div></div>`;
         });
     }
 
@@ -558,7 +569,6 @@
 
     window.onload = () => {
         if (checkUserAuthentication()) {
-            // Spustíme reaktivní poslech na změnu místnosti z DB u daného uživatele
             initUserRoomListener();
         }
         switchPage(1);
