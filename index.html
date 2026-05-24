@@ -141,14 +141,20 @@
 
         /* --- STRÁNKA APLIKACE (IFRAME CONTAINER) --- */
         #appPage {
-            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
             background-color: #1a1b26;
             z-index: 10000;
-            position: absolute;
-            top: 0;
-            left: 0;
+            transform: translateX(100%); /* Výchozí stav: schované vpravo mimo obrazovku */
+            transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1); /* Plynulý odjezd/příjezd do boku */
+        }
+
+        /* Třída aktivovaná pomocí JS, která vrátí appku na obrazovku */
+        #appPage.active {
+            transform: translateX(0);
         }
 
         #appFrame {
@@ -158,7 +164,7 @@
             outline: none;
         }
 
-        /* ŠIPKA ZPĚT V KOLEČKU (OVERLAY DO LEVÉHO HORNÍHO ROHU) */
+        /* ŠIPKA ZPĚT V KOLEČKU */
         .back-circle-btn {
             position: absolute;
             top: 20px;
@@ -166,13 +172,13 @@
             width: 45px;
             height: 45px;
             border-radius: 50%;
-            background-color: rgba(31, 35, 53, 0.8); /* Mírně průhledné k překrytí obsahu v iframe */
+            background-color: rgba(31, 35, 53, 0.8);
             border: 2px solid #414868;
             display: flex;
             justify-content: center;
             align-items: center;
             cursor: pointer;
-            z-index: 10005; /* Vždy nad běžným iFramem */
+            z-index: 10005;
             transition: all 0.3s ease;
             user-select: none;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
@@ -190,7 +196,8 @@
             color: #7aa2f7;
             font-weight: bold;
             line-height: 1;
-            transform: translateY(-1px); /* Optické vycentrování šipky */
+            display: inline-block;
+            transform: rotate(180deg) translateY(1px); /* Otočení šipky doleva */
         }
 
         /* MODALY A CHYBOVÉ PRVKY */
@@ -421,7 +428,8 @@
 
     <div id="appPage">
         <div class="back-circle-btn" id="backBtn" title="Zpět na hlavní panel">
-            <span>➔</span> </div>
+            <span>➔</span>
+        </div>
         <iframe id="appFrame" src="" title="KotakEngine App"></iframe>
     </div>
 
@@ -513,10 +521,6 @@
         const toastText = document.getElementById('toastText');
         const zoomRipple = document.getElementById('zoomRipple');
 
-        // Otáčení šipky v CSS pro správný směr vlevo (⬅)
-        backBtn.querySelector('span').style.transform = 'rotate(180deg)';
-
-        // AUTOMATICKÁ KONTROLA PAMĚTI PŘI REFRESHI
         function checkSavedLogin() {
             const savedUser = localStorage.getItem('kotak_user');
             if (savedUser) {
@@ -541,12 +545,13 @@
             openModal();
         });
 
-        // AKCE PRO TLAČÍTKO ZPĚT Z APKY / IFRAME
+        // ANIMOVANÝ ODJEZD APKY DOPRAVA PO KLIKNUTÍ NA ŠIPKU ZPĚT
         backBtn.addEventListener('click', () => {
-            appFrame.src = ""; // Vyčistíme iFrame obsahu
-            appPage.style.display = "none"; // Skryjeme obalovou vrstvu aplikace
-            landingPage.style.display = "flex"; // Vrátíme zpět úvodní panel
-            showToast("ℹ️ Návrat na hlavní panel", "success");
+            appPage.classList.remove('active'); // CSS spustí plynulý odsun doprava (400ms)
+            
+            setTimeout(() => {
+                appFrame.src = ""; // Vyčistíme iFrame až po dojetí animace
+            }, 400);
         });
 
         enterBtn.addEventListener('click', () => {
@@ -580,8 +585,7 @@
                     appFrame.src = "./" + localPath;
 
                     setTimeout(() => {
-                        landingPage.style.display = "none";
-                        appPage.style.display = "block";
+                        appPage.classList.add('active'); // Přisune iFrame z pravé strany na obrazovku
                         zoomRipple.classList.remove('animate');
                     }, 550);
 
@@ -757,9 +761,11 @@
             localStorage.removeItem('kotak_user');
             profileToggle.classList.remove('is-logged-in');
             
-            appFrame.src = "";
-            appPage.style.display = "none";
-            landingPage.style.display = "flex";
+            // Pokud byl zrovna otevřený iFrame, plynule ho skryjeme
+            appPage.classList.remove('active');
+            setTimeout(() => {
+                appFrame.src = "";
+            }, 400);
             
             closeModal();
             showToast("ℹ️ Byl jsi odhlášen.", "warning");
