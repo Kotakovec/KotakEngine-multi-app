@@ -128,7 +128,7 @@
         /* DETAIL (Oprava barev textů pro bílé pozadí) */
         #detail-view { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; color: black; z-index: 2000; display: none; flex-direction: column; opacity: 0; transition: all 0.4s; padding-top: calc(env(safe-area-inset-top, 20px) + 5px); }
         #detail-view.active { opacity: 1; display: flex; }
-        #detail-view .close-det { color: #000000 !important; font-size: 24px; cursor: pointer; }
+        #detail-view class="close-det" { color: #000000 !important; font-size: 24px; cursor: pointer; }
         #det-name { color: #000000 !important; font-weight: 800; text-transform: uppercase; }
         #barcode-container, #qrcode { width: 100%; display: flex; justify-content: center; align-items: center; padding: 20px 0; }
         .card-number-display { margin-top: 10px; font-family: monospace; font-size: 22px; font-weight: bold; color: #333 !important; text-align: center; }
@@ -200,7 +200,7 @@
 
 <div id="detail-view">
     <div style="display: flex; justify-content: space-between; padding: 20px 20px; align-items: center;">
-        <div onclick="hideDetail()" class="close-det">✕</div>
+        <div onclick="hideDetail()" style="font-size: 24px; cursor: pointer;">✕</div>
         <div id="det-name">NÁZEV</div>
         <div onclick="deleteCard()" style="color: red; font-weight: bold; cursor: pointer;">SMAZAT</div>
     </div>
@@ -269,9 +269,26 @@
         return true;
     }
 
-    function initUserRoomListener() {
+    // První okamžité načtení místnosti z DB na startu
+    function firstLoadUserRoom() {
         if (!uName) return;
         
+        db.ref('users/' + uName + '/cards').once('value', snap => {
+            const assignedRoom = snap.val();
+            if (assignedRoom) {
+                startSync(assignedRoom.toString(), false);
+                // Jakmile máme data poprvé stažená, spustíme realtime hlídače pro změny z jiných zařízení
+                initUserRoomListener();
+            } else {
+                const defaultRoom = Math.floor(10000 + Math.random() * 90000).toString();
+                startSync(defaultRoom, true);
+                initUserRoomListener();
+            }
+        });
+    }
+
+    // Živý poslech změn místnosti (např. z jiného telefonu)
+    function initUserRoomListener() {
         if (userRoomRef) userRoomRef.off();
         
         userRoomRef = db.ref('users/' + uName + '/cards');
@@ -282,9 +299,6 @@
                 if (assignedRoom.toString() !== currentLocalRoom) {
                     startSync(assignedRoom.toString(), false);
                 }
-            } else {
-                const defaultRoom = Math.floor(10000 + Math.random() * 90000).toString();
-                startSync(defaultRoom, true);
             }
         });
     }
@@ -569,7 +583,8 @@
 
     window.onload = () => {
         if (checkUserAuthentication()) {
-            initUserRoomListener();
+            // Spustíme první okamžitý start načtení místnosti z databáze
+            firstLoadUserRoom();
         }
         switchPage(1);
     }
