@@ -128,7 +128,6 @@
         /* DETAIL (Oprava barev textů pro bílé pozadí) */
         #detail-view { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; color: black; z-index: 2000; display: none; flex-direction: column; opacity: 0; transition: all 0.4s; padding-top: calc(env(safe-area-inset-top, 20px) + 5px); }
         #detail-view.active { opacity: 1; display: flex; }
-        #detail-view class="close-det" { color: #000000 !important; font-size: 24px; cursor: pointer; }
         #det-name { color: #000000 !important; font-weight: 800; text-transform: uppercase; }
         #barcode-container, #qrcode { width: 100%; display: flex; justify-content: center; align-items: center; padding: 20px 0; }
         .card-number-display { margin-top: 10px; font-family: monospace; font-size: 22px; font-weight: bold; color: #333 !important; text-align: center; }
@@ -269,7 +268,6 @@
         return true;
     }
 
-    // První okamžité načtení místnosti z DB na startu
     function firstLoadUserRoom() {
         if (!uName) return;
         
@@ -277,17 +275,17 @@
             const assignedRoom = snap.val();
             if (assignedRoom) {
                 startSync(assignedRoom.toString(), false);
-                // Jakmile máme data poprvé stažená, spustíme realtime hlídače pro změny z jiných zařízení
                 initUserRoomListener();
             } else {
                 const defaultRoom = Math.floor(10000 + Math.random() * 90000).toString();
                 startSync(defaultRoom, true);
                 initUserRoomListener();
             }
+            // OPRAVA: Stránku přepneme až ve chvíli, kdy máme jistotu, že asynchronní proces stažení z databáze proběhl!
+            switchPage(1);
         });
     }
 
-    // Živý poslech změn místnosti (např. z jiného telefonu)
     function initUserRoomListener() {
         if (userRoomRef) userRoomRef.off();
         
@@ -583,10 +581,8 @@
 
     window.onload = () => {
         if (checkUserAuthentication()) {
-            // Spustíme první okamžitý start načtení místnosti z databáze
             firstLoadUserRoom();
         }
-        switchPage(1);
     }
 </script>
 </body>
