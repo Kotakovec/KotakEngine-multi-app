@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Moje karty</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    
+    <script src="https://unpkg.com/html5-qrcode"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            background-color: #0d0f14;
+            color: #ffffff;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            overflow-x: hidden;
+        }
+
+        .cards-layout {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+            padding: 10px 20px 90px 20px;
+        }
+
+        .section-title-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding: 0 5px;
+        }
+
+        .section-title {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: #94a3b8;
+        }
+
+        .user-code {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #3b82f6;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+        }
+
+        /* --- GRID MŘÍŽKA --- */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+
+        .card-item {
+            background-color: #161920;
+            border-radius: 200px;
+            padding: 25px 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            cursor: grab;
+            transition: transform 0.2s ease, background-color 0.2s ease, opacity 0.2s ease;
+            user-select: none;
+            -webkit-user-drag: element;
+            border: 1px solid #1a1f2c;
+        }
+
+        .card-item:active { cursor: grabbing; }
+        .card-item.dragging { opacity: 0.5; transform: scale(0.95); border: 1px dashed #007aff; }
+
+        .card-logo-box {
+            width: 60px;
+            height: 60px;
+            background-color: #007aff;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #ffffff;
+            box-shadow: 0 8px 20px rgba(0, 122, 255, 0.15);
+            pointer-events: none;
+        }
+
+        .card-name {
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #94a3b8;
+            letter-spacing: 0.8px;
+            text-align: center;
+            pointer-events: none;
+        }
+
+        /* --- BOTTOM NAVBAR --- */
+        .bottom-navbar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 70px;
+            background-color: #10121a;
+            border-top: 1px solid #1a1f2c;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 100;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            width: 60px;
+            height: 100%;
+            background: none;
+            border: none;
+            outline: none;
+        }
+
+        .nav-icon { font-size: 1.5rem; color: #4b5563; }
+        .nav-item.active .nav-icon { color: #007aff; }
+
+        /* --- MODALY / BOTTOM SHEETS --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(5px);
+            z-index: 30000;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+
+        .modal-sheet {
+            background-color: #1c1e24;
+            width: 100%;
+            border-radius: 25px 25px 0 0;
+            padding: 30px 20px;
+            transform: translateY(100%);
+            transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+            max-width: 500px;
+        }
+
+        .modal-overlay.active .modal-sheet { transform: translateY(0); }
+        .modal-title { font-size: 1.6rem; font-weight: 700; margin-bottom: 25px; }
+        .form-input { width: 100%; padding: 16px; background-color: #282a32; border: none; border-radius: 12px; color: #ffffff; font-size: 1rem; margin-bottom: 16px; outline: none; }
+        .form-input::placeholder { color: #565f89; }
+        
+        .checkbox-container { display: flex; justify-content: space-between; align-items: center; padding: 16px; background-color: #282a32; border-radius: 12px; margin-bottom: 25px; color: #94a3b8; }
+        .checkbox-container input { width: 20px; height: 20px; accent-color: #007aff; }
+
+        /* --- DVE TLACITKA VEDLE SEBE --- */
+        .form-buttons-row {
+            display: flex;
+            gap: 12px;
+            width: 100%;
+        }
+
+        .btn-submit-card {
+            flex: 1;
+            padding: 16px;
+            background-color: #007aff;
+            color: #ffffff;
+            border: none;
+            border-radius: 14px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+
+        .btn-scan-card {
+            flex: 1;
+            padding: 16px;
+            background-color: #282a32;
+            color: #3b82f6;
+            border: 1px solid #1a1f2c;
+            border-radius: 14px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+
+        .sync-buttons-row { display: flex; flex-direction: column; gap: 12px; width: 100%; }
+        .btn-sync-action { width: 100%; padding: 16px; border: none; border-radius: 14px; font-size: 1.1rem; font-weight: 700; cursor: pointer; }
+        .btn-blue { background-color: #007aff; color: #ffffff; }
+        .btn-gray { background-color: #282a32; color: #ffffff; }
+
+        .confirm-buttons-row { display: flex; gap: 12px; width: 100%; margin-top: 10px; }
+        .btn-confirm-yes { flex: 1; padding: 16px; background-color: #ff5c7c; color: #ffffff; border: none; border-radius: 14px; font-size: 1.1rem; font-weight: 700; cursor: pointer; }
+        .btn-confirm-no { flex: 1; padding: 16px; background-color: #282a32; color: #ffffff; border: none; border-radius: 14px; font-size: 1.1rem; font-weight: 700; cursor: pointer; }
+
+        /* --- SKENOVACÍ OKNO --- */
+        #scannerView {
+            width: 100%;
+            border-radius: 15px;
+            overflow: hidden;
+            background-color: #000000;
+            margin-bottom: 20px;
+        }
+
+        /* --- DETAIL OVERLAY --- */
+        .card-detail-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #0d0f14;
+            z-index: 20000;
+            display: flex;
+            flex-direction: column;
+            transform: translateX(100%);
+            transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+            padding: 40px 20px;
+        }
+
+        .card-detail-overlay.active { transform: translateX(0); }
+        .detail-header { display: flex; align-items: center; justify-content: space-between; width: 100%; margin-bottom: 30px; }
+        .header-left-box { display: flex; align-items: center; }
+        .close-detail-btn { background: none; border: none; color: #007aff; font-size: 1.8rem; cursor: pointer; padding-right: 15px; }
+        .detail-title { font-size: 1.5rem; font-weight: 800; }
+        .delete-card-btn { background: none; border: none; color: #ff5c7c; font-size: 1.5rem; cursor: pointer; padding: 5px; }
+        
+        .barcode-container { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 25px; background-color: #ffffff; border-radius: 25px; padding: 30px 15px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        .detail-logo-box { width: 65px; height: 65px; background-color: #007aff; border-radius: 18px; display: flex; justify-content: center; align-items: center; font-size: 1.8rem; font-weight: 800; color: #ffffff; }
+        #barcodeRender { max-width: 100%; height: auto; display: none; }
+        #qrcodeRender { padding: 10px; background: #ffffff; display: none; }
+        .barcode-number { font-size: 1.1rem; font-weight: 700; letter-spacing: 2px; color: #0d0f14; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="cards-layout">
+        <div class="section-title-bar">
+            <h2 class="section-title">Přehled</h2>
+            <div class="user-code" id="displayRoomCode" onclick="openSyncModal()">KÓD: -----</div>
+        </div>
+
+        <div class="cards-grid" id="cardsGrid"></div>
+    </div>
+
+    <div class="bottom-navbar">
+        <button class="nav-item" onclick="switchTab('shop')"><div class="nav-icon">🛒</div></button>
+        <button class="nav-item" onclick="openAddModal()"><div class="nav-icon" style="font-size: 2.2rem; font-weight: 300; color: #007aff;">+</div></button>
+        <button class="nav-item active" onclick="switchTab('cards')"><div class="nav-icon">💳</div></button>
+    </div>
+
+    <div class="modal-overlay" id="syncModalOverlay" onclick="closeOverlaySyncModal(event)">
+        <div class="modal-sheet" onclick="event.stopPropagation()">
+            <h3 class="modal-title">Synchronizace karet</h3>
+            <form id="syncForm" onsubmit="handleSyncConnect(event)">
+                <input type="text" id="syncInput" class="form-input" placeholder="Zadej stávající 5místný kód" maxlength="5" pattern="\d{5}" inputmode="numeric">
+                <div class="sync-buttons-row">
+                    <button type="submit" class="btn-sync-action btn-blue">PŘIPOJIT KÓD</button>
+                    <button type="button" class="btn-sync-action btn-blue" style="background-color: #3b82f6;" onclick="generateNewRandomRoom()">VYTVOŘIT NOVOU MÍSTNOST</button>
+                    <button type="button" class="btn-sync-action btn-gray" onclick="closeSyncModal()">ZAVŘÍT</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="addModalOverlay" onclick="closeOverlayAddModal(event)">
+        <div class="modal-sheet" onclick="event.stopPropagation()">
+            <h3 class="modal-title">Nová karta</h3>
+            <form id="addCardForm" onsubmit="saveCardToFirebase(event)">
+                <input type="text" id="cardShop" class="form-input" placeholder="Obchod" required>
+                <input type="text" id="cardNumber" class="form-input" placeholder="Číslo karty" required>
+                
+                <label class="checkbox-container">
+                    <span>Použít QR kód</span>
+                    <input type="checkbox" id="cardIsQR">
+                </label>
+
+                <div class="form-buttons-row">
+                    <button type="submit" class="btn-submit-card">ULOŽIT KARTU</button>
+                    <button type="button" class="btn-scan-card" onclick="startCameraScanner()">NASKENOVAT</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="scannerOverlay" onclick="stopCameraScanner()">
+        <div class="modal-sheet" onclick="event.stopPropagation()">
+            <h3 class="modal-title">Naskenuj kód</h3>
+            <div id="scannerView"></div>
+            <button type="button" class="btn-sync-action btn-gray" onclick="stopCameraScanner()">ZRUŠIT</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="confirmDeleteOverlay" onclick="closeConfirmDeleteModal()">
+        <div class="modal-sheet" onclick="event.stopPropagation()">
+            <h3 class="modal-title" style="color: #ff5c7c; margin-bottom: 25px;">Doopravdy chcete smazat tuto kartu?</h3>
+            <div class="confirm-buttons-row">
+                <button type="button" class="btn-confirm-yes" onclick="executeCardDeletion()">ANO</button>
+                <button type="button" class="btn-confirm-no" onclick="closeConfirmDeleteModal()">NE</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="card-detail-overlay" id="detailOverlay" onclick="closeCardDetail()">
+        <div class="modal-content" style="height: 100%; display: flex; flex-direction: column;" onclick="event.stopPropagation()">
+            <div class="detail-header">
+                <div class="header-left-box">
+                    <button class="close-detail-btn" onclick="closeCardDetail()">✕</button>
+                    <h3 class="detail-title" id="detailCardName">Obchod</h3>
+                </div>
+                <button class="delete-card-btn" onclick="openConfirmDeleteModal()" title="Smazat kartu">🗑️</button>
+            </div>
+            <div class="barcode-container">
+                <div class="detail-logo-box" id="detailCardLetter">?</div>
+                <svg id="barcodeRender"></svg>
+                <div id="qrcodeRender"></div>
+                <div class="barcode-number" id="detailBarcodeNumber">0000000000</div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+        import { getDatabase, ref, push, onValue, set, get, remove } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAGx6NDM6dqQzTwbhwDB1BhFnfjmepuLnE",
+            authDomain: "kotakengine-multi-app.firebaseapp.com",
+            databaseURL: "https://kotakengine-multi-app-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "kotakengine-multi-app",
+            storageBucket: "kotakengine-multi-app.firebasestorage.app",
+            messagingSenderId: "692935167232",
+            appId: "1:692935167232:web:55ff99266dd5b230ca37e5",
+            measurementId: "G-TGVH1SWPPR"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app, firebaseConfig.databaseURL);
+
+        const cardsGrid = document.getElementById('cardsGrid');
+        const addModalOverlay = document.getElementById('addModalOverlay');
+        const syncModalOverlay = document.getElementById('syncModalOverlay');
+        const confirmDeleteOverlay = document.getElementById('confirmDeleteOverlay');
+        const scannerOverlay = document.getElementById('scannerOverlay');
+        const displayRoomCode = document.getElementById('displayRoomCode');
+        
+        let currentRoom = null;
+        let loggedUsername = null;
+        let activeCardIdForDeletion = null;
+        let html5QrcodeScanner = null;
+
+        function checkUserRoom() {
+            const savedUser = localStorage.getItem('kotak_user');
+            if (savedUser) {
+                const parsed = JSON.parse(savedUser);
+                loggedUsername = parsed.username;
+                get(ref(db, `users/${loggedUsername}/cards/id`)).then((snapshot) => {
+                    if (snapshot.exists()) {
+                        currentRoom = snapshot.val();
+                        displayRoomCode.innerText = "KÓD: " + currentRoom;
+                        listenToCards();
+                    } else {
+                        syncModalOverlay.classList.add('active');
+                    }
+                }).catch(err => console.error(err));
+            }
+        }
+        checkUserRoom();
+
+        window.handleSyncConnect = function(event) {
+            event.preventDefault();
+            const roomInput = document.getElementById('syncInput').value;
+            if (roomInput.length === 5 && loggedUsername) saveRoomToUser(roomInput);
+        };
+
+        window.generateNewRandomRoom = function() {
+            if (!loggedUsername) return;
+            const randomRoomNum = Math.floor(10000 + Math.random() * 90000).toString();
+            saveRoomToUser(randomRoomNum);
+        };
+
+        function saveRoomToUser(roomCode) {
+            set(ref(db, `users/${loggedUsername}/cards/id`), roomCode).then(() => {
+                currentRoom = roomCode;
+                displayRoomCode.innerText = "KÓD: " + currentRoom;
+                syncModalOverlay.classList.remove('active');
+                document.getElementById('syncForm').reset();
+                listenToCards();
+            }).catch(err => console.error(err));
+        }
+
+        function listenToCards() {
+            if (!currentRoom) return;
+            onValue(ref(db, `cards/${currentRoom}`), (snapshot) => {
+                cardsGrid.innerHTML = "";
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    let cardsArray = [];
+                    for (let id in data) cardsArray.push({ id, ...data[id] });
+                    cardsArray.sort((a, b) => (a.position || 0) - (b.position || 0));
+                    cardsArray.forEach((card) => {
+                        const letter = card.name.charAt(0).toUpperCase();
+                        cardsGrid.insertAdjacentHTML('beforeend', `
+                            <div class="card-item" draggable="true" data-id="${card.id}" onclick="handleCardClick(event, '${card.id}', '${card.name}', '${letter}', '${card.code}', '${card.type}')">
+                                <div class="card-logo-box">${letter}</div>
+                                <div class="card-name">${card.name}</div>
+                            </div>
+                        `);
+                    });
+                    initDragAndDrop();
+                } else {
+                    cardsGrid.innerHTML = `<p style="grid-column: span 2; text-align: center; color: #565f89; padding-top: 20px;">Žádné karty. Klikni na + pro přidání.</p>`;
+                }
+            });
+        }
+
+        let isDraggingActive = false;
+        window.handleCardClick = function(event, id, name, letter, code, type) {
+            if (isDraggingActive) return;
+            activeCardIdForDeletion = id;
+            openCardDetail(name, letter, code, type);
+        };
+
+        window.openConfirmDeleteModal = function() { confirmDeleteOverlay.classList.add('active'); };
+        window.closeConfirmDeleteModal = function() { confirmDeleteOverlay.classList.remove('active'); };
+
+        window.executeCardDeletion = function() {
+            if (currentRoom && activeCardIdForDeletion) {
+                remove(ref(db, `cards/${currentRoom}/${activeCardIdForDeletion}`)).then(() => {
+                    closeConfirmDeleteModal();
+                    closeCardDetail();
+                }).catch(err => console.error(err));
+            }
+        };
+
+        // --- SKENOVÁNÍ POMOCÍ KAMERY ---
+        window.startCameraScanner = function() {
+            scannerOverlay.classList.add('active');
+            
+            // Konfigurace čtečky (zkouší QR i klasické čárové kódy z obchodů)
+            html5QrcodeScanner = new Html5Qrcode("scannerView");
+            html5QrcodeScanner.start(
+                { facingMode: "environment" }, 
+                {
+                    fps: 15,
+                    qrbox: { width: 250, height: 150 }
+                },
+                (decodedText, decodedResult) => {
+                    // Úspěšně naskenováno!
+                    document.getElementById('cardNumber').value = decodedText;
+                    
+                    // Zkusíme odhadnout, jestli je to QR nebo Barcode podle typu kódování
+                    const format = decodedResult.result.format.formatName;
+                    if (format.includes("QR") || format.includes("DATA_MATRIX")) {
+                        document.getElementById('cardIsQR').checked = true;
+                    } else {
+                        document.getElementById('cardIsQR').checked = false;
+                    }
+
+                    stopCameraScanner(); // Vypne foťák
+                },
+                (errorMessage) => { /* Chyby průběžného hledání kódu ignorujeme */ }
+            ).catch(err => {
+                console.error("Nelze spustit foťák: ", err);
+                alert("Nepodařilo se spustit fotoaparát. Zkontroluj oprávnění.");
+                stopCameraScanner();
+            });
+        };
+
+        window.stopCameraScanner = function() {
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.stop().then(() => {
+                    html5QrcodeScanner = null;
+                    scannerOverlay.classList.remove('active');
+                }).catch(err => {
+                    scannerOverlay.classList.remove('active');
+                });
+            } else {
+                scannerOverlay.classList.remove('active');
+            }
+        };
+
+        // Drag and Drop
+        function initDragAndDrop() {
+            const items = cardsGrid.querySelectorAll('.card-item');
+            items.forEach(item => {
+                item.addEventListener('dragstart', () => { isDraggingActive = true; item.classList.add('dragging'); });
+                item.addEventListener('dragend', () => { item.classList.remove('dragging'); setTimeout(() => { isDraggingActive = false; }, 50); saveNewOrderToFirebase(); });
+                item.addEventListener('touchstart', () => { item.touchTimeout = setTimeout(() => { isDraggingActive = true; item.classList.add('dragging'); }, 200); }, {passive: true});
+                item.addEventListener('touchend', () => { clearTimeout(item.touchTimeout); if (item.classList.contains('dragging')) { item.classList.remove('dragging'); setTimeout(() => { isDraggingActive = false; }, 50); saveNewOrderToFirebase(); } });
+                item.addEventListener('touchmove', (e) => {
+                    if (!item.classList.contains('dragging')) { clearTimeout(item.touchTimeout); return; }
+                    const touch = e.touches[0];
+                    const target = document.elementFromPoint(touch.clientX, touch.clientY);
+                    const closestCard = target?.closest('.card-item');
+                    if (closestCard && closestCard !== item) {
+                        const nextNode = closestCard.nextElementSibling;
+                        if (nextNode === item) cardsGrid.insertBefore(item, closestCard);
+                        else cardsGrid.insertBefore(item, nextNode);
+                    }
+                }, {passive: true});
+            });
+            cardsGrid.addEventListener('dragover', e => {
+                e.preventDefault();
+                const draggingItem = cardsGrid.querySelector('.dragging');
+                const siblings = [...cardsGrid.querySelectorAll('.card-item:not(.dragging)')];
+                let nextSibling = siblings.find(sibling => { const box = sibling.getBoundingClientRect(); return e.clientX <= box.left + box.width / 2 && e.clientY <= box.top + box.height / 2; });
+                if (!nextSibling) { nextSibling = siblings.find(sibling => { const box = sibling.getBoundingClientRect(); return e.clientX <= box.right && e.clientY <= box.bottom; }); }
+                cardsGrid.insertBefore(draggingItem, nextSibling);
+            });
+        }
+
+        function saveNewOrderToFirebase() {
+            if (!currentRoom) return;
+            const items = [...cardsGrid.querySelectorAll('.card-item')];
+            items.forEach((item, index) => { set(ref(db, `cards/${currentRoom}/${item.getAttribute('data-id')}/position`), index); });
+        }
+
+        window.saveCardToFirebase = function(event) {
+            event.preventDefault();
+            if (!currentRoom) return;
+            const shopName = document.getElementById('cardShop').value;
+            const cardNumber = document.getElementById('cardNumber').value;
+            const isQR = document.getElementById('cardIsQR').checked;
+            const currentCount = cardsGrid.querySelectorAll('.card-item').length;
+
+            push(ref(db, `cards/${currentRoom}`), { name: shopName, code: cardNumber, type: isQR ? "qr" : "barcode", position: currentCount }).then(() => {
+                document.getElementById('addCardForm').reset();
+                addModalOverlay.classList.remove('active');
+            }).catch((err) => console.error(err));
+        };
+
+        window.openSyncModal = function() { if (currentRoom) document.getElementById('syncInput').value = currentRoom; syncModalOverlay.classList.add('active'); };
+        window.closeSyncModal = function() { syncModalOverlay.classList.remove('active'); };
+        window.openAddModal = function() { if (!currentRoom) return; addModalOverlay.classList.add('active'); };
+        window.closeAddModal = function() { addModalOverlay.classList.remove('active'); };
+        window.closeOverlaySyncModal = function(event) { if (event.target === syncModalOverlay) closeSyncModal(); };
+        window.closeOverlayAddModal = function(event) { if (event.target === addModalOverlay) closeAddModal(); };
+    </script>
+
+    <script>
+        const detailOverlay = document.getElementById('detailOverlay');
+        window.openCardDetail = function(name, letter, code, type) {
+            document.getElementById('detailCardName').innerText = name;
+            document.getElementById('detailCardLetter').innerText = letter;
+            document.getElementById('detailBarcodeNumber').innerText = code;
+            const barcodeSvg = document.getElementById('barcodeRender');
+            const qrcodeDiv = document.getElementById('qrcodeRender');
+            barcodeSvg.style.display = "none"; qrcodeDiv.style.display = "none"; qrcodeDiv.innerHTML = "";
+
+            if (type === "barcode") {
+                barcodeSvg.style.display = "block";
+                JsBarcode("#barcodeRender", code, { format: "CODE128", width: 2.5, height: 100, displayValue: false, background: "#ffffff", lineColor: "#000000" });
+            } else if (type === "qr") {
+                qrcodeDiv.style.display = "block";
+                new QRCode(qrcodeDiv, { text: code, width: 160, height: 160, colorDark : "#000000", colorLight : "#ffffff", correctLevel : QRCode.CorrectLevel.H });
+            }
+            detailOverlay.classList.add('active');
+        };
+        window.closeCardDetail = function() { detailOverlay.classList.remove('active'); };
+        window.switchTab = function(tabName) { console.log("Přepnuto: " + tabName); };
+    </script>
+</body>
+</html>

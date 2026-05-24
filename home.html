@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KotakEngine</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #0f111a;
+            color: #ffffff;
+            position: relative;
+        }
+
+        #landingPage {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .main-container {
+            text-align: center;
+            animation: fadeIn 1s ease-out;
+            z-index: 5;
+        }
+
+        .title {
+            font-size: 4rem;
+            font-weight: 800;
+            letter-spacing: 2px;
+            margin-bottom: 20px;
+            background: linear-gradient(45deg, #7aa2f7, #b4f9f8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 4px 20px rgba(122, 162, 247, 0.15);
+        }
+
+        .enter-btn {
+            position: relative;
+            padding: 12px 40px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #ffffff;
+            background: #0f111a;
+            border: 2px solid #7aa2f7;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        .enter-btn:hover {
+            background: #7aa2f7;
+            color: #0f111a;
+            box-shadow: 0 0 20px rgba(122, 162, 247, 0.4);
+            transform: translateY(-2px);
+        }
+
+        /* IOS ZOOM ANIMACE */
+        .ios-zoom-ripple {
+            position: fixed;
+            border-radius: 50%;
+            background: #0d0f14;
+            pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%) scale(0);
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .ios-zoom-ripple.animate {
+            transform: translate(-50%, -50%) scale(4);
+        }
+
+        #appPage {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #0d0f14;
+            z-index: 10000;
+            transform: translateX(0);
+            transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        #appPage.slide-out {
+            transform: translateX(100%);
+        }
+
+        .app-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            outline: none;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="landingPage">
+        <div class="ios-zoom-ripple" id="zoomRipple"></div>
+
+        <div class="main-container">
+            <h1 class="title">KotakEngine</h1>
+            <button class="enter-btn" id="enterBtn">ENTER</button>
+        </div>
+    </div>
+
+    <div id="appPage">
+        <iframe id="appFrame" class="app-iframe" src="" title="KotakEngine App"></iframe>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+        import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAGx6NDM6dqQzTwbhwDB1BhFnfjmepuLnE",
+            authDomain: "kotakengine-multi-app.firebaseapp.com",
+            databaseURL: "https://kotakengine-multi-app-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "kotakengine-multi-app",
+            storageBucket: "kotakengine-multi-app.firebasestorage.app",
+            messagingSenderId: "692935167232",
+            appId: "1:692935167232:web:55ff99266dd5b230ca37e5",
+            measurementId: "G-TGVH1SWPPR"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app, firebaseConfig.databaseURL);
+
+        const landingPage = document.getElementById('landingPage');
+        const appPage = document.getElementById('appPage');
+        const appFrame = document.getElementById('appFrame');
+        const enterBtn = document.getElementById('enterBtn');
+        const zoomRipple = document.getElementById('zoomRipple');
+
+        function isStrictMobile() {
+            const ua = navigator.userAgent || navigator.vendor || window.opera;
+            return /Android/i.test(ua) && /Mobile/i.test(ua) || /iPhone/i.test(ua) && !/iPad/i.test(ua) || /iPod/i.test(ua);
+        }
+
+        // Naslouchání požadavku na zavření z app.html
+        window.addEventListener('message', (event) => {
+            if (event.data === 'closeWholeApp') {
+                appPage.classList.add('slide-out');
+                setTimeout(() => {
+                    appPage.style.display = "none";
+                    appFrame.src = "";
+                    landingPage.style.display = "flex";
+                }, 400);
+            }
+        });
+
+        enterBtn.addEventListener('click', () => {
+            if (!isStrictMobile()) { alert("❌ KotakEngine je povolen pouze na mobilních zařízeních Android a iOS!"); return; }
+
+            const configRef = ref(db, 'app_config/path');
+            get(configRef).then((snapshot) => {
+                if (snapshot.exists()) {
+                    const localPath = snapshot.val(); 
+
+                    const rect = enterBtn.getBoundingClientRect();
+                    const size = Math.max(window.innerWidth, window.innerHeight) * 2;
+
+                    zoomRipple.style.width = `${size}px`;
+                    zoomRipple.style.height = `${size}px`;
+                    zoomRipple.style.left = `${rect.left + rect.width / 2}px`;
+                    zoomRipple.style.top = `${rect.top + rect.height / 2}px`;
+                    zoomRipple.classList.add('animate');
+
+                    appFrame.src = "./" + localPath;
+
+                    setTimeout(() => {
+                        appPage.classList.remove('slide-out'); 
+                        landingPage.style.display = "none";
+                        appPage.style.display = "block";
+                        zoomRipple.classList.remove('animate');
+                    }, 550);
+                }
+            });
+        });
+    </script>
+</body>
+</html>

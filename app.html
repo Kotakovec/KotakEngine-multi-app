@@ -3,48 +3,428 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KotakEngine App Core</title>
+    <title>KotakEngine - Hub</title>
     <style>
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
         }
+
         body, html {
             width: 100%;
             height: 100%;
-            overflow: hidden;
-            background-color: #1a1b26; /* Sladěno s tmavým tématem indexu */
+            background-color: #0d0f14;
             color: #ffffff;
-            font-family: 'Segoe UI', Roboto, sans-serif;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            overflow: hidden;
+        }
+
+        .app-layout {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        .app-header {
+            padding: 20px;
+            text-align: center;
+            font-size: 1.1rem;
+            font-weight: 700;
+            border-bottom: 1px solid #1a1f2c;
+            letter-spacing: 0.5px;
+            position: relative;
+            background-color: #0d0f14;
+            z-index: 1000;
+        }
+
+        .hub-back-btn {
+            display: none;
+            position: absolute;
+            top: 10px;
+            left: 20px;
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background-color: #161920;
+            border: 2px solid #1a1f2c;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+
+        .hub-back-btn span {
+            font-size: 18px;
+            color: #007aff;
+            font-weight: bold;
+            display: inline-block;
+            transform: rotate(180deg) translateY(1px);
+        }
+
+        .profile-icon {
+            position: absolute;
+            top: 9px;
+            right: 20px;
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background-color: #161920;
+            border: 2px solid #1a1f2c;
             display: flex;
             justify-content: center;
             align-items: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            user-select: none;
         }
-        .container {
+
+        .profile-icon .plus-sign { font-size: 22px; color: #007aff; font-weight: bold; line-height: 1; }
+        .profile-icon .user-avatar { font-size: 18px; display: none; }
+        .profile-icon.is-logged-in { background-color: #007aff; border-color: #ffffff; }
+        .profile-icon.is-logged-in .plus-sign { display: none; }
+        .profile-icon.is-logged-in .user-avatar { display: block; color: #0d0f14; }
+
+        .auth-placeholder {
+            display: flex;
+            flex: 1;
+            justify-content: center;
+            align-items: center;
+            padding: 30px;
             text-align: center;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #565f89;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .hub-content {
+            display: none;
+            flex: 1;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 16px;
             padding: 20px;
+            animation: fadeIn 0.5s ease-out;
         }
-        h1 {
-            font-size: 2.5rem;
-            color: #9ece6a; /* Zelená barva jádra */
-            margin-bottom: 15px;
-            letter-spacing: 1px;
-        }
-        p {
+
+        .hub-button {
+            width: 100%;
+            max-width: 400px;
+            padding: 18px 30px;
+            background-color: #161920;
+            border: 1px solid #1a1f2c;
+            border-radius: 50px;
+            color: #ffffff;
             font-size: 1.1rem;
-            color: #a9b1d6;
-            line-height: 1.5;
+            font-weight: 700;
+            text-align: left;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.2s ease, background-color 0.2s ease;
+            user-select: none;
+        }
+
+        .hub-button:active { transform: scale(0.97); background-color: #1e232d; border-color: #007aff; }
+        .hub-button .icon { font-size: 1.3rem; color: #007aff; }
+
+        .iframe-container {
+            display: none;
+            position: absolute;
+            top: 61px;
+            left: 0;
+            width: 100%;
+            height: calc(100% - 61px);
+            background-color: #0d0f14;
+            z-index: 500;
+        }
+
+        .app-iframe { width: 100%; height: 100%; border: none; background-color: #0d0f14; }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(5px);
+            z-index: 30000;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+        }
+
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+
+        .modal-content {
+            background-color: #1c1e24;
+            width: 100%;
+            max-width: 400px;
+            padding: 30px;
+            border-radius: 0 0 15px 15px;
+            border: 2px solid #1a1f2c;
+            border-top: none;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            transform: translateY(-100%);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.1);
+            color: #ffffff;
+        }
+
+        .modal-overlay.active .modal-content { transform: translateY(0); }
+        .auth-tabs { display: flex; margin-bottom: 25px; border-bottom: 2px solid #1a1f2c; }
+        .auth-tab { flex: 1; padding: 10px; text-align: center; cursor: pointer; font-weight: 600; color: #94a3b8; }
+        .auth-tab.active { color: #007aff; border-bottom: 3px solid #007aff; margin-bottom: -2px; }
+        .auth-form { display: none; }
+        .auth-form.active { display: block; }
+        .form-group { margin-bottom: 18px; }
+        .form-group label { display: block; margin-bottom: 6px; font-size: 0.9rem; color: #94a3b8; }
+        .form-group input { width: 100%; padding: 12px; background-color: #161920; border: 1px solid #1a1f2c; border-radius: 8px; color: #ffffff; font-size: 1rem; outline: none; }
+        .form-group input:focus { border-color: #007aff; }
+        .error-message { color: #ff5c7c; font-size: 0.85rem; margin-top: 5px; display: none; }
+        .profile-view { display: none; text-align: center; padding: 10px 0; }
+        .profile-view.active { display: block; }
+        .profile-view-avatar { font-size: 50px; margin-bottom: 15px; }
+        .profile-view-username { font-size: 1.6rem; font-weight: 700; color: #007aff; margin-bottom: 4px; }
+        .profile-view-email { font-size: 0.95rem; color: #94a3b8; margin-bottom: 25px; }
+        
+        .submit-btn { width: 100%; padding: 12px; background-color: #007aff; color: #ffffff; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; margin-top: 10px; }
+        .logout-btn { background-color: #ff5c7c; }
+        .close-modal-btn { width: 100%; padding: 8px; background: transparent; color: #565f89; border: none; cursor: pointer; font-size: 0.9rem; margin-top: 15px; text-decoration: underline; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <h1>KotakEngine Dashboard 🚀</h1>
-        <p>Vítej uvnitř běžící chráněné aplikace.</p>
-        <p style="font-size: 0.9rem; margin-top: 10px; color: #565f89;">Tento obsah se načítá izolovaně přes iFrame.</p>
+    <div class="app-layout">
+        <div class="app-header">
+            <div class="hub-back-btn" id="backBtn" onclick="handleMasterBackClick()">
+                <span>➔</span>
+            </div>
+            
+            <span id="headerTitle">KotakEngine Hub</span>
+
+            <div class="profile-icon" id="profileToggle">
+                <span class="plus-sign">+</span>
+                <span class="user-avatar">👤</span>
+            </div>
+        </div>
+
+        <div class="auth-placeholder" id="authPlaceholder">
+            Pro zobrazení aplikací se nejprve přihlaste
+        </div>
+
+        <div class="hub-content" id="hubPage">
+            <div class="hub-button" onclick="openAppIframe('cards.html', 'Moje karty')">
+                <span>Moje karty</span>
+                <span class="icon">💳</span>
+            </div>
+            <div class="hub-button"><span>Prohlížeč</span><span class="icon">🌐</span></div>
+            <div class="hub-button"><span>Šifrování binarů</span><span class="icon">🔐</span></div>
+            <div class="hub-button"><span>Kotak AI</span><span class="icon">🤖</span></div>
+            <div class="hub-button"><span>Nastavení</span><span class="icon">⚙️</span></div>
+        </div>
+
+        <div class="iframe-container" id="iframeContainer">
+            <iframe class="app-iframe" id="subAppIframe" src=""></iframe>
+        </div>
     </div>
 
+    <div class="modal-overlay" id="authModal" onclick="closeOverlayModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div id="unauthenticatedContent">
+                <div class="auth-tabs">
+                    <div class="auth-tab active" id="tabLogin" onclick="switchTab('login')">Přihlášení</div>
+                    <div class="auth-tab" id="tabRegister" onclick="switchTab('register')">Registrace</div>
+                </div>
+                <form class="auth-form active" id="formLogin" onsubmit="handleLogin(event)">
+                    <div class="form-group"><label>Email</label><input type="text" id="loginEmail" required></div>
+                    <div class="form-group"><label>Heslo</label><input type="password" id="loginPassword" required></div>
+                    <button type="submit" class="submit-btn">Přihlásit se</button>
+                </form>
+                <form class="auth-form" id="formRegister" onsubmit="handleRegister(event)">
+                    <div class="form-group"><label>Uživatelské jméno</label><input type="text" id="regUsername" required><div class="error-message" id="regUsernameError">Max 20 znaků, pouze malá písmena!</div></div>
+                    <div class="form-group"><label>Email</label><input type="text" id="regEmail" required></div>
+                    <div class="form-group"><label>Heslo</label><input type="password" id="regPassword" required><div class="error-message" id="regPasswordError">Heslo musí mít alespoň 8 znaků!</div></div>
+                    <button type="submit" class="submit-btn">Registrovat se</button>
+                </form>
+            </div>
+            <div class="profile-view" id="authenticatedContent">
+                <div class="profile-view-avatar">👤</div>
+                <div class="profile-view-username" id="profUsername">username</div>
+                <div class="profile-view-email" id="profEmail">email@example.com</div>
+                <button class="submit-btn logout-btn" onclick="handleLogout()">Odhlásit se</button>
+            </div>
+            <button class="close-modal-btn" onclick="closeModal()">Zavřít</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+        import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAGx6NDM6dqQzTwbhwDB1BhFnfjmepuLnE",
+            authDomain: "kotakengine-multi-app.firebaseapp.com",
+            databaseURL: "https://kotakengine-multi-app-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "kotakengine-multi-app",
+            storageBucket: "kotakengine-multi-app.firebasestorage.app",
+            messagingSenderId: "692935167232",
+            appId: "1:692935167232:web:55ff99266dd5b230ca37e5",
+            measurementId: "G-TGVH1SWPPR"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app, firebaseConfig.databaseURL);
+
+        const hubPage = document.getElementById('hubPage');
+        const authPlaceholder = document.getElementById('authPlaceholder');
+        const iframeContainer = document.getElementById('iframeContainer');
+        const subAppIframe = document.getElementById('subAppIframe');
+        const headerTitle = document.getElementById('headerTitle');
+        const backBtn = document.getElementById('backBtn');
+        const profileToggle = document.getElementById('profileToggle');
+        const authModal = document.getElementById('authModal');
+
+        let isSubAppOpen = false;
+        let isLoggedIn = false;
+        let currentUserData = { username: "", email: "" };
+
+        function updateUIByAuthStatus() {
+            if (isLoggedIn) {
+                authPlaceholder.style.display = "none";
+                hubPage.style.display = "flex";
+                profileToggle.classList.add('is-logged-in');
+            } else {
+                hubPage.style.display = "none";
+                authPlaceholder.style.display = "flex";
+                profileToggle.classList.remove('is-logged-in');
+            }
+        }
+
+        function checkSavedLogin() {
+            const savedUser = localStorage.getItem('kotak_user');
+            if (savedUser) {
+                const parsedData = JSON.parse(savedUser);
+                isLoggedIn = true;
+                currentUserData.username = parsedData.username;
+                currentUserData.email = parsedData.email;
+            }
+            updateUIByAuthStatus();
+        }
+        checkSavedLogin();
+
+        window.handleMasterBackClick = function() {
+            if (isSubAppOpen) {
+                window.closeAppIframe();
+            } else {
+                window.parent.postMessage('closeWholeApp', '*');
+            }
+        };
+
+        window.openAppIframe = function(url, titleText) {
+            if (!isLoggedIn) return;
+            subAppIframe.src = url;
+            headerTitle.innerText = titleText;
+            hubPage.style.display = "none";
+            profileToggle.style.display = "none";
+            backBtn.style.display = "flex";
+            iframeContainer.style.display = "block";
+            isSubAppOpen = true;
+        };
+
+        window.closeAppIframe = function() {
+            subAppIframe.src = "";
+            headerTitle.innerText = "KotakEngine Hub";
+            iframeContainer.style.display = "none";
+            backBtn.style.display = "none";
+            profileToggle.style.display = "flex";
+            hubPage.style.display = "flex";
+            isSubAppOpen = false;
+        };
+
+        profileToggle.addEventListener('click', () => {
+            const unauth = document.getElementById('unauthenticatedContent'), auth = document.getElementById('authenticatedContent');
+            if (isLoggedIn) {
+                unauth.style.display = 'none'; auth.classList.add('active');
+                document.getElementById('profUsername').innerText = currentUserData.username;
+                document.getElementById('profEmail').innerText = currentUserData.email;
+            } else {
+                unauth.style.display = 'block'; auth.classList.remove('active');
+            }
+            authModal.classList.add('active');
+        });
+
+        window.closeModal = function() { authModal.classList.remove('active'); };
+
+        window.closeOverlayModal = function(event) {
+            if (event.target === authModal) {
+                authModal.classList.remove('active');
+            }
+        };
+
+        window.switchTab = function(type) { const tl = document.getElementById('tabLogin'), tr = document.getElementById('tabRegister'), fl = document.getElementById('formLogin'), fr = document.getElementById('formRegister'); if (type === 'login') { tl.classList.add('active'); tr.classList.remove('active'); fl.classList.add('active'); fr.classList.remove('active'); } else { tl.classList.remove('active'); tr.classList.add('active'); fl.classList.remove('active'); fr.classList.add('active'); } };
+        
+        window.handleLogin = function(event) {
+            event.preventDefault();
+            const email = document.getElementById('loginEmail').value, pass = document.getElementById('loginPassword').value;
+            get(ref(db, 'users')).then((snapshot) => {
+                if (snapshot.exists()) {
+                    let found = false; const data = snapshot.val();
+                    for (let username in data) {
+                        if (data[username].email === email && data[username].heslo === pass) {
+                            found = true; isLoggedIn = true; currentUserData = { username, email };
+                            localStorage.setItem('kotak_user', JSON.stringify(currentUserData));
+                            closeModal();
+                            updateUIByAuthStatus();
+                            break;
+                        }
+                    }
+                    if (!found) alert("❌ Nesprávný email nebo heslo!");
+                }
+            });
+        };
+
+        window.handleRegister = function(event) {
+            event.preventDefault();
+            const username = document.getElementById('regUsername').value, email = document.getElementById('regEmail').value, pass = document.getElementById('regPassword').value;
+            if (!/^[a-z]+$/.test(username) || username.length > 20) return;
+            get(ref(db, `users/${username}`)).then((snapshot) => {
+                if (snapshot.exists()) { alert("❌ Uživatelské jméno je již obsazené!"); }
+                else {
+                    set(ref(db, `users/${username}`), { email, heslo: pass }).then(() => {
+                        isLoggedIn = true; currentUserData = { username, email };
+                        localStorage.setItem('kotak_user', JSON.stringify(currentUserData));
+                        closeModal();
+                        updateUIByAuthStatus();
+                    });
+                }
+            });
+        };
+
+        window.handleLogout = function() {
+            isLoggedIn = false; currentUserData = { username: "", email: "" };
+            localStorage.removeItem('kotak_user');
+            closeModal();
+            updateUIByAuthStatus();
+            window.parent.postMessage('closeWholeApp', '*');
+        };
+
+        window.addEventListener('message', function(event) { if (event.data === 'closeSubApp') { window.closeAppIframe(); } });
+    </script>
 </body>
 </html>
