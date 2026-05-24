@@ -139,25 +139,6 @@
             transform: translate(-50%, -50%) scale(4);
         }
 
-        /* --- STRÁNKA APLIKACE (IFRAME CONTAINER) --- */
-        #appPage {
-            display: none;
-            width: 100%;
-            height: 100%;
-            background-color: #1a1b26;
-            z-index: 10000;
-            position: absolute;
-            top: 0;
-            left: 0;
-        }
-
-        #appFrame {
-            width: 100%;
-            height: 100%;
-            border: none;
-            outline: none;
-        }
-
         /* MODALY A CHYBOVÉ PRVKY */
         .modal-overlay {
             position: fixed;
@@ -384,10 +365,6 @@
         </div>
     </div>
 
-    <div id="appPage">
-        <iframe id="appFrame" src="" title="KotakEngine App"></iframe>
-    </div>
-
     <div class="bottom-toast warning" id="appToast">
         <span id="toastText">⚠️ Nejprve se přihlas!</span>
     </div>
@@ -466,8 +443,6 @@
         let toastTimeout;
 
         const landingPage = document.getElementById('landingPage');
-        const appPage = document.getElementById('appPage');
-        const appFrame = document.getElementById('appFrame');
         const profileToggle = document.getElementById('profileToggle');
         const authModal = document.getElementById('authModal');
         const enterBtn = document.getElementById('enterBtn');
@@ -475,7 +450,7 @@
         const toastText = document.getElementById('toastText');
         const zoomRipple = document.getElementById('zoomRipple');
 
-        // --- AUTOMATICKÁ KONTROLA PAMĚTI PŘI REFRESHI ---
+        // AUTOMATICKÁ KONTROLA PAMĚTI PŘI REFRESHI
         function checkSavedLogin() {
             const savedUser = localStorage.getItem('kotak_user');
             if (savedUser) {
@@ -486,7 +461,6 @@
                 profileToggle.classList.add('is-logged-in');
             }
         }
-        // Spustíme hned při načtení webu
         checkSavedLogin();
 
         function isStrictMobile() {
@@ -528,12 +502,10 @@
                     zoomRipple.style.top = `${clickY}px`;
 
                     zoomRipple.classList.add('animate');
-                    appFrame.src = localPath;
 
+                    // SPUŠTĚNÍ PŘESMĚROVÁNÍ NA MÍSTO IFRAME
                     setTimeout(() => {
-                        landingPage.style.display = "none";
-                        appPage.style.display = "block";
-                        zoomRipple.classList.remove('animate');
+                        window.location.href = localPath;
                     }, 550);
 
                 } else {
@@ -598,7 +570,6 @@
             return email.includes('@') && email.includes('.');
         }
 
-        // --- PŘIHLÁŠENÍ ---
         window.handleLogin = function(event) {
             event.preventDefault();
             const emailInput = document.getElementById('loginEmail').value;
@@ -622,7 +593,6 @@
                             currentUserData.username = username;
                             currentUserData.email = usersData[username].email;
                             
-                            // ZÁPIS DO PAMĚTI PROHLÍŽEČE
                             localStorage.setItem('kotak_user', JSON.stringify(currentUserData));
 
                             profileToggle.classList.add('is-logged-in');
@@ -644,7 +614,6 @@
             });
         }
 
-        // --- REGISTRACE ---
         window.handleRegister = function(event) {
             event.preventDefault();
             const username = document.getElementById('regUsername').value;
@@ -691,7 +660,6 @@
                         currentUserData.username = username;
                         currentUserData.email = email;
 
-                        // ZÁPIS DO PAMĚTI PROHLÍŽEČE
                         localStorage.setItem('kotak_user', JSON.stringify(currentUserData));
 
                         profileToggle.classList.add('is-logged-in');
@@ -705,19 +673,12 @@
             });
         }
 
-        // --- ODHLÁŠENÍ ---
         window.handleLogout = function() {
             isLoggedIn = false;
             currentUserData = { username: "", email: "" };
             
-            // SMAZÁNÍ DATA Z PAMĚTI PROHLÍŽEČE
             localStorage.removeItem('kotak_user');
-
             profileToggle.classList.remove('is-logged-in');
-            
-            appFrame.src = "";
-            appPage.style.display = "none";
-            landingPage.style.display = "flex";
             
             closeModal();
             showToast("ℹ️ Byl jsi odhlášen.", "warning");
