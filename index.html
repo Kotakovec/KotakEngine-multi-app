@@ -158,6 +158,41 @@
             outline: none;
         }
 
+        /* ŠIPKA ZPĚT V KOLEČKU (OVERLAY DO LEVÉHO HORNÍHO ROHU) */
+        .back-circle-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background-color: rgba(31, 35, 53, 0.8); /* Mírně průhledné k překrytí obsahu v iframe */
+            border: 2px solid #414868;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            z-index: 10005; /* Vždy nad běžným iFramem */
+            transition: all 0.3s ease;
+            user-select: none;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+        }
+
+        .back-circle-btn:hover {
+            transform: scale(1.05);
+            border-color: #7aa2f7;
+            background-color: #1f2335;
+            box-shadow: 0 0 10px rgba(122, 162, 247, 0.4);
+        }
+
+        .back-circle-btn span {
+            font-size: 20px;
+            color: #7aa2f7;
+            font-weight: bold;
+            line-height: 1;
+            transform: translateY(-1px); /* Optické vycentrování šipky */
+        }
+
         /* MODALY A CHYBOVÉ PRVKY */
         .modal-overlay {
             position: fixed;
@@ -385,6 +420,8 @@
     </div>
 
     <div id="appPage">
+        <div class="back-circle-btn" id="backBtn" title="Zpět na hlavní panel">
+            <span>➔</span> </div>
         <iframe id="appFrame" src="" title="KotakEngine App"></iframe>
     </div>
 
@@ -471,9 +508,13 @@
         const profileToggle = document.getElementById('profileToggle');
         const authModal = document.getElementById('authModal');
         const enterBtn = document.getElementById('enterBtn');
+        const backBtn = document.getElementById('backBtn');
         const appToast = document.getElementById('appToast');
         const toastText = document.getElementById('toastText');
         const zoomRipple = document.getElementById('zoomRipple');
+
+        // Otáčení šipky v CSS pro správný směr vlevo (⬅)
+        backBtn.querySelector('span').style.transform = 'rotate(180deg)';
 
         // AUTOMATICKÁ KONTROLA PAMĚTI PŘI REFRESHI
         function checkSavedLogin() {
@@ -500,6 +541,14 @@
             openModal();
         });
 
+        // AKCE PRO TLAČÍTKO ZPĚT Z APKY / IFRAME
+        backBtn.addEventListener('click', () => {
+            appFrame.src = ""; // Vyčistíme iFrame obsahu
+            appPage.style.display = "none"; // Skryjeme obalovou vrstvu aplikace
+            landingPage.style.display = "flex"; // Vrátíme zpět úvodní panel
+            showToast("ℹ️ Návrat na hlavní panel", "success");
+        });
+
         enterBtn.addEventListener('click', () => {
             if (!isLoggedIn) {
                 showToast("⚠️ Nejprve se přihlas!", "warning");
@@ -514,7 +563,7 @@
             const configRef = ref(db, 'app_config/path');
             get(configRef).then((snapshot) => {
                 if (snapshot.exists()) {
-                    const localPath = snapshot.val(); // Z DB se stáhne text "app.html"
+                    const localPath = snapshot.val(); 
 
                     const rect = enterBtn.getBoundingClientRect();
                     const clickX = rect.left + rect.width / 2;
@@ -528,7 +577,6 @@
 
                     zoomRipple.classList.add('animate');
 
-                    // Bezpečné podhození relativní cesty do iFrame
                     appFrame.src = "./" + localPath;
 
                     setTimeout(() => {
@@ -709,7 +757,6 @@
             localStorage.removeItem('kotak_user');
             profileToggle.classList.remove('is-logged-in');
             
-            // Vyčistíme iframe a vrátíme se na landing page
             appFrame.src = "";
             appPage.style.display = "none";
             landingPage.style.display = "flex";
