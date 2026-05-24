@@ -39,7 +39,7 @@
         .page { width: 100vw; height: 100%; padding: 10px 20px; box-sizing: border-box; overflow-y: auto; position: relative; }
         h1 { font-size: 26px; margin: 5px 0 15px 0; font-weight: 700; }
 
-        /* OPRAVENÝ DESIGN BUBBLÍ PODLE SCREENSHOTU (2 sloupce, vajíčkový tvar) */
+        /* DESIGN BUBBLÍ (2 sloupce, vajíčkový tvar) */
         .grid { 
             display: grid; 
             grid-template-columns: repeat(2, 1fr); 
@@ -49,7 +49,7 @@
         .tile { 
             background: #131722; 
             height: 110px; 
-            border-radius: 55px; /* Perfektně zaoblené do oválu podle obrázku */
+            border-radius: 55px; 
             display: flex; 
             flex-direction: column;
             align-items: center; 
@@ -63,7 +63,6 @@
             transition: transform 0.1s ease, box-shadow 0.1s ease;
         }
         
-        /* Vizuální stav při přetahování karty */
         .tile.dragging {
             z-index: 1000;
             background: #1c2132;
@@ -223,7 +222,7 @@
         }
     });
 
-    let cards = [], todos = [], cardsRef = null, todosRef = null, currentIdx = null, uName = "";
+    let cards = [], todos = [], cardsRef = null, todosRef = null, userRoomRef = null, currentIdx = null, uName = "";
     
     // Obsluha Drag & Drop
     let dragEl = null, startX = 0, startY = 0, initialIndex = null, isPressing = false, pressTimeout = null;
@@ -254,14 +253,26 @@
         return true;
     }
 
-    function loadUserRoomFromDatabase() {
-        db.ref('users/' + uName + '/cards').once('value', snap => {
+    function initUserRoomListener() {
+        if (!uName) return;
+        
+        // Vypnutí případného starého listeneru
+        if (userRoomRef) userRoomRef.off();
+        
+        // ŽIVÝ POSLECH: Sleduje změnu přidělené místnosti u daného uživatele v reálném čase
+        userRoomRef = db.ref('users/' + uName + '/cards');
+        userRoomRef.on('value', snap => {
             const assignedRoom = snap.val();
             if (assignedRoom) {
-                startSync(assignedRoom.toString());
+                const currentLocalRoom = localStorage.getItem('room');
+                // Pokud se zapsaná místnost v DB liší od té lokální, live přepneme streamy dat
+                if (assignedRoom.toString() !== currentLocalRoom) {
+                    startSync(assignedRoom.toString(), false); // false = nezapisovat znovu zpět do DB, jen přepnout stream
+                }
             } else {
+                // Pokud uživatel místnost nemá, vygenerujeme novou a zapíšeme ji
                 const defaultRoom = Math.floor(10000 + Math.random() * 90000).toString();
-                startSync(defaultRoom);
+                startSync(defaultRoom, true);
             }
         });
     }
@@ -269,17 +280,18 @@
     function initSyncManual() {
         const code = document.getElementById('syncInput').value;
         if (code.length !== 5) return alert("Zadej 5 čísel!");
-        startSync(code);
+        startSync(code, true); // Zde uživatel mění místnost ručně, chceme zápis do DB
         closeAll();
     }
 
-    function startSync(code) {
+    function startSync(code, writeToDatabase = true) {
         localStorage.setItem('room', code);
 
         if(cardsRef) cardsRef.off();
         if(todosRef) todosRef.off();
 
-        if (uName) {
+        // Pokud je vyžadován zápis do DB a máme uživatelské jméno
+        if (writeToDatabase && uName) {
             db.ref('users/' + uName + '/cards').set(code);
         }
 
@@ -287,7 +299,7 @@
         todosRef = db.ref('todos/' + code);
 
         cardsRef.on('value', snap => {
-            if (dragEl) return; // Ignorujeme změny pod rukou při dragování
+            if (dragEl) return; 
             
             const data = snap.val() || {};
             cards = Object.keys(data).map(key => ({
@@ -404,7 +416,7 @@
         });
     }
 
-    /* UKLÁDÁNÍ KARET A DETEKCE POHYBU V GRIDU (2 SLOUPCE) */
+    /* DRAG & DROP LOGIKA */
     function handleTouchStart(e, index) {
         isPressing = true;
         initialIndex = index;
@@ -438,7 +450,6 @@
         const grid = document.getElementById('card-grid');
         const siblingTiles = [...grid.querySelectorAll('.tile:not(.dragging)')];
         
-        // Najdeme prvek gridu, nad kterým se prst zrovna nachází
         let targetSibling = siblingTiles.find(sibling => {
             const rect = sibling.getBoundingClientRect();
             return touch.clientX >= rect.left && touch.clientX <= rect.right &&
@@ -547,7 +558,8 @@
 
     window.onload = () => {
         if (checkUserAuthentication()) {
-            loadUserRoomFromDatabase();
+            // Spustíme reaktivní poslech na změnu místnosti z DB u daného uživatele
+            initUserRoomListener();
         }
         switchPage(1);
     }
