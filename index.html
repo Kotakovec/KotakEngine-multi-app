@@ -141,6 +141,7 @@
 
         /* --- STRÁNKA APLIKACE (IFRAME CONTAINER) --- */
         #appPage {
+            display: none; /* Řízeno přes JS (none/block) pro okamžité zobrazení po zoomu */
             position: fixed;
             top: 0;
             left: 0;
@@ -148,13 +149,13 @@
             height: 100%;
             background-color: #1a1b26;
             z-index: 10000;
-            transform: translateX(100%); /* Výchozí stav: schované vpravo mimo obrazovku */
-            transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1); /* Plynulý odjezd/příjezd do boku */
+            transform: translateX(0);
+            transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1); /* Plynulý odjezd pouze směrem ven */
         }
 
-        /* Třída aktivovaná pomocí JS, která vrátí appku na obrazovku */
-        #appPage.active {
-            transform: translateX(0);
+        /* Třída, kterou JavaScript nahodí POUZE při odchodu, aby appka plynule odjela doprava */
+        #appPage.slide-out {
+            transform: translateX(100%);
         }
 
         #appFrame {
@@ -547,10 +548,12 @@
 
         // ANIMOVANÝ ODJEZD APKY DOPRAVA PO KLIKNUTÍ NA ŠIPKU ZPĚT
         backBtn.addEventListener('click', () => {
-            appPage.classList.remove('active'); // CSS spustí plynulý odsun doprava (400ms)
+            appPage.classList.add('slide-out'); // Spustí plynulý odjezd doprava (400ms)
             
             setTimeout(() => {
-                appFrame.src = ""; // Vyčistíme iFrame až po dojetí animace
+                appPage.style.display = "none"; // Schováme z DOMu úplně
+                appFrame.src = ""; // Vyčistíme iFrame
+                landingPage.style.display = "flex"; // Obnovíme zobrazení pozadí
             }, 400);
         });
 
@@ -585,7 +588,10 @@
                     appFrame.src = "./" + localPath;
 
                     setTimeout(() => {
-                        appPage.classList.add('active'); // Přisune iFrame z pravé strany na obrazovku
+                        // VYČIŠTĚNÍ PŘEDCHOZÍHO ODJEZDU A OKAMŽITÉ ZOBRAZENÍ
+                        appPage.classList.remove('slide-out'); 
+                        landingPage.style.display = "none"; // Skryjeme spodek
+                        appPage.style.display = "block"; // Okamžitě vykreslíme iFrame (kruh zoomu ho kryje)
                         zoomRipple.classList.remove('animate');
                     }, 550);
 
@@ -648,7 +654,7 @@
         }
 
         function validateEmail(email) {
-            return email.includes('@') && email.includes('.');
+            return email.includes('@');
         }
 
         window.handleLogin = function(event) {
@@ -761,9 +767,9 @@
             localStorage.removeItem('kotak_user');
             profileToggle.classList.remove('is-logged-in');
             
-            // Pokud byl zrovna otevřený iFrame, plynule ho skryjeme
-            appPage.classList.remove('active');
+            appPage.classList.add('slide-out');
             setTimeout(() => {
+                appPage.style.display = "none";
                 appFrame.src = "";
             }, 400);
             
