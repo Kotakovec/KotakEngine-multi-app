@@ -475,6 +475,20 @@
         const toastText = document.getElementById('toastText');
         const zoomRipple = document.getElementById('zoomRipple');
 
+        // --- AUTOMATICKÁ KONTROLA PAMĚTI PŘI REFRESHI ---
+        function checkSavedLogin() {
+            const savedUser = localStorage.getItem('kotak_user');
+            if (savedUser) {
+                const parsedData = JSON.parse(savedUser);
+                isLoggedIn = true;
+                currentUserData.username = parsedData.username;
+                currentUserData.email = parsedData.email;
+                profileToggle.classList.add('is-logged-in');
+            }
+        }
+        // Spustíme hned při načtení webu
+        checkSavedLogin();
+
         function isStrictMobile() {
             const ua = navigator.userAgent || navigator.vendor || window.opera;
             const isAndroidPhone = /Android/i.test(ua) && /Mobile/i.test(ua);
@@ -487,7 +501,6 @@
             openModal();
         });
 
-        // NAČTENÍ CESTY Z FIREBASE PO STISKNUTÍ ENTER
         enterBtn.addEventListener('click', () => {
             if (!isLoggedIn) {
                 showToast("⚠️ Nejprve se přihlas!", "warning");
@@ -499,13 +512,11 @@
                 return;
             }
 
-            // Stáhneme relativní hodnotu z DB (očekává se hodnota "./app.html")
             const configRef = ref(db, 'app_config/path');
             get(configRef).then((snapshot) => {
                 if (snapshot.exists()) {
                     const localPath = snapshot.val(); 
 
-                    // Výpočet pozice pro iOS Launch efekt
                     const rect = enterBtn.getBoundingClientRect();
                     const clickX = rect.left + rect.width / 2;
                     const clickY = rect.top + rect.height / 2;
@@ -517,8 +528,6 @@
                     zoomRipple.style.top = `${clickY}px`;
 
                     zoomRipple.classList.add('animate');
-
-                    // Vložíme cestu z databáze do iframe
                     appFrame.src = localPath;
 
                     setTimeout(() => {
@@ -613,6 +622,9 @@
                             currentUserData.username = username;
                             currentUserData.email = usersData[username].email;
                             
+                            // ZÁPIS DO PAMĚTI PROHLÍŽEČE
+                            localStorage.setItem('kotak_user', JSON.stringify(currentUserData));
+
                             profileToggle.classList.add('is-logged-in');
                             closeModal();
                             showToast(`✅ Vítej zpět, ${username}!`, "success");
@@ -679,6 +691,9 @@
                         currentUserData.username = username;
                         currentUserData.email = email;
 
+                        // ZÁPIS DO PAMĚTI PROHLÍŽEČE
+                        localStorage.setItem('kotak_user', JSON.stringify(currentUserData));
+
                         profileToggle.classList.add('is-logged-in');
                         closeModal();
                         showToast("🎉 Registrace úspěšná! Nyní jsi přihlášen.", "success");
@@ -694,6 +709,10 @@
         window.handleLogout = function() {
             isLoggedIn = false;
             currentUserData = { username: "", email: "" };
+            
+            // SMAZÁNÍ DATA Z PAMĚTI PROHLÍŽEČE
+            localStorage.removeItem('kotak_user');
+
             profileToggle.classList.remove('is-logged-in');
             
             appFrame.src = "";
