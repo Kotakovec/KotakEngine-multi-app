@@ -489,7 +489,7 @@
             const configRef = ref(db, 'app_config/path');
             get(configRef).then((snapshot) => {
                 if (snapshot.exists()) {
-                    const localPath = snapshot.val(); 
+                    const localPath = snapshot.val(); // Tady se z DB stáhne čistý text "app.html"
 
                     const rect = enterBtn.getBoundingClientRect();
                     const clickX = rect.left + rect.width / 2;
@@ -503,8 +503,9 @@
 
                     zoomRipple.classList.add('animate');
 
+                    // TU JE OPRAVA: Vynutíme relativní přechod striktně ve stejné složce repozitáře
                     setTimeout(() => {
-                        window.location.href = localPath;
+                        window.location.href = "./" + localPath;
                     }, 550);
 
                 } else {
