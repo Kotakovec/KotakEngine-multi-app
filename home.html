@@ -126,7 +126,7 @@
     </div>
 
     <div id="appPage">
-        <iframe id="appFrame" class="app-iframe" src="about:blank" title="KotakEngine App"></iframe>
+        <iframe id="appFrame" class="app-iframe" src="" title="KotakEngine App"></iframe>
     </div>
 
     <script type="module">
@@ -158,35 +158,32 @@
             return /Android/i.test(ua) && /Mobile/i.test(ua) || /iPhone/i.test(ua) && !/iPad/i.test(ua) || /iPod/i.test(ua);
         }
 
-        // --- SKUTEČNÝ ČISTÝ SKIP OKNA PRO PWA ---
+        // --- TVŮJ PWA AUTOMATICKÝ SKIP ---
+        // Kontroluje čistě jen existenci parametru mode=pwa v URL adrese
         const urlParams = new URLSearchParams(window.location.search);
-        const isPwaMode = urlParams.get('mode') === 'pwa';
-        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-
-        // Pokud jsme na PC, isStandalone je false, podmínka padá a zůstane ti svítit čistý home.html s ENTERem
-        if (isPwaMode && isStandalone) {
+        if (urlParams.get('mode') === 'pwa') {
             const configRef = ref(db, 'app_config/path');
             get(configRef).then((snapshot) => {
                 if (snapshot.exists()) {
-                    // NATVRDO přesměrujeme celé okno prohlížeče na app.html, žádný skrytý iFrame
+                    // Pokud parametr v URL je, natvrdo přesměrujeme celé okno na app.html
                     window.location.href = "./" + snapshot.val();
                 }
             });
         }
 
-        // Naslouchání požadavku na zavření z app.html (pokud by se spouštělo klasicky přes ENTER)
+        // Naslouchání požadavku na zavření z app.html
         window.addEventListener('message', (event) => {
             if (event.data === 'closeWholeApp') {
                 appPage.classList.add('slide-out');
                 setTimeout(() => {
                     appPage.style.display = "none";
-                    appFrame.src = "about:blank";
+                    appFrame.src = "";
                     landingPage.style.display = "flex";
                 }, 400);
             }
         });
 
-        // Klasické kliknutí na ENTER v prohlížeči
+        // Klasické kliknutí na ENTER (pokud parametr v URL chybí, zůstane uživatel zde a může kliknout)
         enterBtn.addEventListener('click', () => {
             if (!isStrictMobile()) { alert("❌ KotakEngine je povolen pouze na mobilních zařízeních Android a iOS!"); return; }
 
