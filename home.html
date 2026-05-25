@@ -158,6 +158,21 @@
             return /Android/i.test(ua) && /Mobile/i.test(ua) || /iPhone/i.test(ua) && !/iPad/i.test(ua) || /iPod/i.test(ua);
         }
 
+        // --- AUTOMATICKÝ SKIP PRO PWA ---
+        // Zkontroluje, zda adresa obsahuje příznak z manifestu
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('mode') === 'pwa') {
+            const configRef = ref(db, 'app_config/path');
+            get(configRef).then((snapshot) => {
+                if (snapshot.exists()) {
+                    // PWA aktivní -> rovnou načteme app.html a skryjeme landing screen
+                    appFrame.src = "./" + snapshot.val();
+                    landingPage.style.display = "none";
+                    appPage.style.display = "block";
+                }
+            });
+        }
+
         // Naslouchání požadavku na zavření z app.html
         window.addEventListener('message', (event) => {
             if (event.data === 'closeWholeApp') {
@@ -166,6 +181,12 @@
                     appPage.style.display = "none";
                     appFrame.src = "";
                     landingPage.style.display = "flex";
+                    
+                    // Po manuálním zavření vyčistíme URL, aby při dalším ručním reloadu naskočil ENTER
+                    if (window.history.pushState) {
+                        const newurl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+                        window.history.pushState({path:newurl}, '', newurl);
+                    }
                 }, 400);
             }
         });
