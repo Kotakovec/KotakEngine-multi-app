@@ -158,16 +158,15 @@
             return /Android/i.test(ua) && /Mobile/i.test(ua) || /iPhone/i.test(ua) && !/iPad/i.test(ua) || /iPod/i.test(ua);
         }
 
-        // --- ZDVOJENÁ KONTROLA PRO SKUTEČNÉ PWA ---
-        const urlParams = new URLSearchParams(window.location.search);
-        const isPwaParam = urlParams.get('mode') === 'pwa';
-        // Kontrola, zda okno běží samostatně (standalone) v iOS/Android instalaci
-        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+        // --- HLAVNÍ OPRAVA: NEPRŮSTŘELNÁ DETEKCE STAŽENÉHO PWA REŽIMU ---
+        // Ignorujeme URL parametry a ptáme se přímo okna prohlížeče na display-mode
+        const isActualPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
 
-        if (isPwaParam && isStandalone) {
+        if (isActualPWA) {
             const configRef = ref(db, 'app_config/path');
             get(configRef).then((snapshot) => {
                 if (snapshot.exists()) {
+                    // POUZE pokud systém potvrdí standalone okno z plochy, provedeme automatický skok
                     appFrame.src = "./" + snapshot.val();
                     landingPage.style.display = "none";
                     appPage.style.display = "block";
@@ -183,11 +182,6 @@
                     appPage.style.display = "none";
                     appFrame.src = "";
                     landingPage.style.display = "flex";
-                    
-                    if (window.history.pushState) {
-                        const newurl = window.location.protocol + "//" + window.location.host + window.location.pathname;
-                        window.history.pushState({path:newurl}, '', newurl);
-                    }
                 }, 400);
             }
         });
