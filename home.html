@@ -158,37 +158,37 @@
             return /Android/i.test(ua) && /Mobile/i.test(ua) || /iPhone/i.test(ua) && !/iPad/i.test(ua) || /iPod/i.test(ua);
         }
 
-        // --- ZPŘÍSNĚNÁ KONTROLA PWA ---
+        // --- SKUTEČNÝ ČISTÝ SKIP OKNA PRO PWA ---
         const urlParams = new URLSearchParams(window.location.search);
-        const hasPwaParam = urlParams.get('mode') === 'pwa';
+        const isPwaMode = urlParams.get('mode') === 'pwa';
         const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
 
-        // Na PC nebo běžném prohlížeči isStandalone vrátí FALSE, takže se tato sekce kompletně přeskočí
-        if (hasPwaParam && isStandalone) {
+        // Pokud jsme na PC, isStandalone je false, podmínka padá a zůstane ti svítit čistý home.html s ENTERem
+        if (isPwaMode && isStandalone) {
             const configRef = ref(db, 'app_config/path');
             get(configRef).then((snapshot) => {
                 if (snapshot.exists()) {
-                    appFrame.src = "./" + snapshot.val();
-                    landingPage.style.display = "none";
-                    appPage.style.display = "block";
+                    // NATVRDO přesměrujeme celé okno prohlížeče na app.html, žádný skrytý iFrame
+                    window.location.href = "./" + snapshot.val();
                 }
             });
         }
 
-        // Naslouchání požadavku na zavření z app.html
+        // Naslouchání požadavku na zavření z app.html (pokud by se spouštělo klasicky přes ENTER)
         window.addEventListener('message', (event) => {
             if (event.data === 'closeWholeApp') {
                 appPage.classList.add('slide-out');
                 setTimeout(() => {
                     appPage.style.display = "none";
-                    appFrame.src = "about:blank"; // Vyčištění zpět na prázdnou stránku
+                    appFrame.src = "about:blank";
                     landingPage.style.display = "flex";
                 }, 400);
             }
         });
 
+        // Klasické kliknutí na ENTER v prohlížeči
         enterBtn.addEventListener('click', () => {
-            if (!isStrictMobile()) { alert("❌ KotakEngine je povolen pouze na mobilních zařízeních Android and iOS!"); return; }
+            if (!isStrictMobile()) { alert("❌ KotakEngine je povolen pouze na mobilních zařízeních Android a iOS!"); return; }
 
             const configRef = ref(db, 'app_config/path');
             get(configRef).then((snapshot) => {
