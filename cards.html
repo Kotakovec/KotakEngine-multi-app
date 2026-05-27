@@ -4,8 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>KotakEngine - Karty</title>
+
     <meta name="color-scheme" content="dark">
     <meta name="android-color-scheme" content="dark">
+    <meta name="theme-color" content="#080a0f" media="(prefers-color-scheme: dark)">
+    <meta name="theme-color" content="#080a0f">
+
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
@@ -30,6 +34,9 @@
             --separator: #1c2030;
             --nav-bg: #0d0f16;
             --border: #1e2335;
+            
+            /* Pojistka proti agresivnímu přebarvování v Samsung Browseru */
+            color-scheme: dark !important;
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -154,7 +161,7 @@
         }
         .input-box::placeholder { color: var(--text-muted); }
 
-        /* NOVÁ KARTA MODAL - přepracovaný layout */
+        /* NOVÁ KARTA MODAL */
         .card-form-group { display: flex; flex-direction: column; gap: 6px; }
         
         .code-row { display: flex; gap: 8px; align-items: center; }
@@ -289,8 +296,6 @@
             text-align: center; letter-spacing: 2px;
         }
 
-
-
         /* SYNC LABEL */
         #syncLabel {
             color: var(--accent); font-weight: 700; font-size: 11px;
@@ -307,13 +312,12 @@
     <div class="update-modal">
         <span style="font-size:50px; display:block; margin-bottom:15px;">🚀</span>
         <h2 style="margin:0; font-size: 22px;">Aktualizace nutná</h2>
-        <p style="color:#aaa; margin-top:12px; font-size: 14px; line-height: 1.5;">K dispozici je nová verze KotakEngine. Pro pokračování prosím aktualizujte.</p>
+        <p style="color:#aaa; margin-top:12px; font-size: 14px; line-height: 1.4;">K dispozici je nová verze KotakEngine. Pro pokračování prosím aktualizujte.</p>
         <a id="update-link" href="#" class="btn-update">AKTUALIZOVAT</a>
     </div>
 </div>
 
 <div id="viewport" class="viewport">
-    <!-- STRÁNKA: Přehled karet -->
     <div class="page">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
             <h1 style="margin:0;">Přehled</h1>
@@ -323,14 +327,12 @@
     </div>
 </div>
 
-<!-- NAVIGACE -->
 <nav class="nav-bar">
     <div class="nav-item" onclick="openAddCard()">➕</div>
 </nav>
 
 <div id="overlay" onclick="closeAll()"></div>
 
-<!-- SYNC SHEET -->
 <div id="sync-sheet" class="sheet">
     <div class="sheet-handle"></div>
     <h2>Změnit místnost</h2>
@@ -341,7 +343,6 @@
     </div>
 </div>
 
-<!-- ADD CARD SHEET -->
 <div id="add-sheet" class="sheet">
     <div class="sheet-handle"></div>
     <h2>Nová karta</h2>
@@ -375,7 +376,6 @@
     </div>
 </div>
 
-<!-- DETAIL KARTY -->
 <div id="detail-view">
     <div style="display: flex; justify-content: space-between; padding: 16px 20px; align-items: center; border-bottom: 1px solid #eee;">
         <div onclick="hideDetail()" style="font-size: 22px; cursor: pointer; padding: 4px;">✕</div>
@@ -389,7 +389,6 @@
     </div>
 </div>
 
-<!-- SKENER MODÁL -->
 <div id="scanner-modal">
     <video id="scanner-video" autoplay playsinline muted></video>
     <div class="scanner-overlay">
@@ -455,7 +454,6 @@
     }
 
     function startDetection(video) {
-        // Zkusíme BarcodeDetector API (nativní Chrome/Android)
         if ('BarcodeDetector' in window) {
             const detector = new BarcodeDetector({
                 formats: ['qr_code','code_128','code_39','ean_13','ean_8','upc_a','upc_e','itf','codabar','code_93','data_matrix','pdf417','aztec']
@@ -472,7 +470,6 @@
                 } catch(e) {}
             }, 300);
         } else {
-            // Fallback: canvas + ZXing-like scan přes jsbarcode (jen zobrazíme info)
             showScannerFallback();
         }
     }
@@ -481,7 +478,6 @@
         clearInterval(scannerInterval);
         const isQr = format === 'qr_code' || format === 'data_matrix' || format === 'aztec' || format === 'pdf417';
 
-        // Vizuální feedback
         const resultEl = document.getElementById('scanner-result');
         resultEl.textContent = isQr ? '✓ QR KÓD NASKENOVÁN' : '✓ ČÁROVÝ KÓD NASKENOVÁN';
         resultEl.classList.add('show');
@@ -752,9 +748,4 @@
         document.getElementById('sync-sheet').classList.add('active');
     }
 
-    window.onload = () => {
-        if (checkUserAuthentication()) firstLoadUserRoom();
-    }
-</script>
-</body>
-</html>
+    window.onload = () =>
